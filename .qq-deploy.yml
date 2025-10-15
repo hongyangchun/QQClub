@@ -1,0 +1,78 @@
+# QQClub Deploy 配置文件
+# 这个文件控制部署脚本的行为
+
+# 基础配置
+auto_commit: true          # 自动提交代码
+auto_push: true           # 自动推送到远程仓库
+auto_tag: false           # 自动创建Git标签
+
+# 测试配置
+run_tests: true           # 运行测试套件
+test_timeout: 300         # 测试超时时间（秒）
+
+# 文档配置
+update_docs: true         # 更新项目文档
+update_api_docs: true     # 更新API文档
+
+# 通知配置
+enable_notifications: false  # 启用通知
+webhook_url: ""          # Webhook URL（用于通知）
+
+# 备份配置
+create_backup: false      # 创建部署前备份
+backup_path: "./backups" # 备份存储路径
+
+# 环境特定配置
+environments:
+  development:
+    auto_push: true
+    run_tests: true
+    create_backup: false
+    update_docs: true
+
+  staging:
+    auto_push: true
+    run_tests: true
+    create_backup: true
+    update_docs: true
+
+  production:
+    auto_push: true
+    run_tests: true
+    create_backup: true
+    require_tag: true
+    update_docs: false
+
+# 分支保护配置
+branch_protection:
+  protected_branches:
+    - main
+    - master
+  require_confirmation: true  # 在保护分支上操作时需要确认
+  allow_force_push: false     # 是否允许强制推送到保护分支
+
+# Commit消息配置
+commit_message:
+  include_stats: true     # 包含变更统计
+  include_file_list: true # 包含文件变更列表
+  max_files_display: 10   # 最大显示文件数量
+  template: "[auto] {date} - {type}"  # 消息模板
+
+# 版本管理配置
+versioning:
+  auto_increment: false   # 自动递增版本号
+  version_file: "VERSION" # 版本文件路径
+  tag_format: "v{version}" # 标签格式
+
+# 安全配置
+security:
+  verify_git_integrity: true  # 验证Git仓库完整性
+  check_sensitive_files: true # 检查敏感文件泄露
+  scan_secrets: false         # 扫描密钥信息
+
+# 报告配置
+reporting:
+  generate_report: true    # 生成部署报告
+  report_format: "markdown" # 报告格式 (markdown, json, html)
+  save_report: true        # 保存报告到文件
+  report_path: "./reports" # 报告存储路径
