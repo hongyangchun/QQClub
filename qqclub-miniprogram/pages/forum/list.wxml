@@ -168,11 +168,11 @@
 <!-- 更多操作菜单 -->
 <view class="more-menu-modal" wx:if="{{showMoreMenu}}" bindtap="hideMoreMenu">
   <view class="more-menu-content" catchtap="stopPropagation">
-    <view class="menu-item" wx:if="{{currentPost.author_id === userId}}" bindtap="editPost">
+    <view class="menu-item" wx:if="{{currentPost.author_info.id === userId}}" bindtap="editPost">
       <text class="menu-icon">✏️</text>
       <text class="menu-text">编辑帖子</text>
     </view>
-    <view class="menu-item" wx:if="{{currentPost.author_id === userId}}" bindtap="deletePost">
+    <view class="menu-item" wx:if="{{currentPost.author_info.id === userId}}" bindtap="deletePost">
       <text class="menu-icon">🗑️</text>
       <text class="menu-text">删除帖子</text>
     </view>

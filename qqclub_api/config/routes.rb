@@ -12,7 +12,9 @@ Rails.application.routes.draw do
 
     # 认证路由
     post "auth/mock_login", to: "auth#mock_login"
+    post "auth/wechat_login", to: "auth#wechat_login"
     post "auth/login", to: "auth#login"
+    post "auth/refresh_token", to: "auth#refresh_token"
     get "auth/me", to: "auth#me"
     put "auth/profile", to: "auth#update_profile"
 
@@ -61,6 +63,8 @@ Rails.application.routes.draw do
     resources :check_ins, only: [:show, :update] do
       # 给打卡送小红花
       resource :flower, only: [:create]
+      # 打卡评论
+      resources :comments, only: [:index, :create], controller: 'check_in_comments'
     end
 
     # 用户收到的小红花

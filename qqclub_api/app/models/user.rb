@@ -19,9 +19,56 @@ class User < ApplicationRecord
       user_id: id,
       wx_openid: wx_openid,
       role: role_as_string,  # 使用字符串角色名
-      exp: 30.days.from_now.to_i
+      exp: 30.days.from_now.to_i,
+      iat: Time.current.to_i,  # 签发时间
+      type: 'access'  # token类型
     }
     JWT.encode(payload, Rails.application.credentials.jwt_secret_key || "dev_secret_key")
+  end
+
+  # 生成refresh token（长期有效）
+  def generate_refresh_token
+    payload = {
+      user_id: id,
+      wx_openid: wx_openid,
+      type: 'refresh',
+      exp: 90.days.from_now.to_i,  # 90天有效期
+      iat: Time.current.to_i
+    }
+    JWT.encode(payload, Rails.application.credentials.jwt_secret_key || "dev_secret_key")
+  end
+
+  # 解析refresh token
+  def self.decode_refresh_token(token)
+    begin
+      decoded = JWT.decode(token, Rails.application.credentials.jwt_secret_key || "dev_secret_key")[0]
+      return nil unless decoded['type'] == 'refresh'
+      HashWithIndifferentAccess.new(decoded)
+    rescue JWT::DecodeError => e
+      Rails.logger.warn "Refresh token解码失败: #{e.message}"
+      nil
+    end
+  end
+
+  # 使用refresh token生成新的access token
+  def self.refresh_access_token(refresh_token)
+    decoded = decode_refresh_token(refresh_token)
+    return nil unless decoded
+
+    user = User.find_by(id: decoded['user_id'])
+    return nil unless user
+
+    # 验证openid是否匹配
+    return nil unless user.wx_openid == decoded['wx_openid']
+
+    # 生成新的access token
+    new_access_token = user.generate_jwt_token
+
+    {
+      access_token: new_access_token,
+      refresh_token: refresh_token,  # refresh token可以继续使用
+      user: user.as_json_for_api
+    }
   end
 
   # 解析 JWT token
@@ -154,5 +201,17 @@ class User < ApplicationRecord
     else
       false
     end
+  end
+
+  # 用于API响应的用户信息格式化
+  def as_json_for_api
+    {
+      id: id,
+      nickname: nickname,
+      wx_openid: wx_openid,
+      avatar_url: avatar_url,
+      phone: phone,
+      role: role_as_string
+    }
   end
 end

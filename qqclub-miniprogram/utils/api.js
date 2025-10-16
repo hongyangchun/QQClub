@@ -23,19 +23,23 @@ class API {
     },
 
     // 微信登录
-    wechatLogin: (code) => {
+    wechatLogin: (loginData) => {
       return this.request({
         url: '/api/auth/wechat_login',
         method: 'POST',
-        data: { code }
+        data: loginData
       })
     },
 
-    // 验证token
-    validateToken: () => {
+    // 刷新token
+    refreshToken: (refreshToken) => {
       return this.request({
-        url: '/api/auth/validate',
-        method: 'GET'
+        url: '/api/auth/refresh_token',
+        method: 'POST',
+        data: {
+          refresh_token: refreshToken
+        },
+        skipAuth: true  // 刷新token不需要认证
       })
     },
 
@@ -363,6 +367,23 @@ class API {
     create: (eventId, scheduleId, data) => {
       return this.request({
         url: `/api/reading_events/${eventId}/schedules/${scheduleId}/check_ins`,
+        method: 'POST',
+        data: data
+      })
+    },
+
+    // 获取打卡评论
+    getComments: (checkInId) => {
+      return this.request({
+        url: `/api/check_ins/${checkInId}/comments`,
+        method: 'GET'
+      })
+    },
+
+    // 添加打卡评论
+    addComment: (checkInId, data) => {
+      return this.request({
+        url: `/api/check_ins/${checkInId}/comments`,
         method: 'POST',
         data: data
       })

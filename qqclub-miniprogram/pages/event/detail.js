@@ -21,6 +21,15 @@ Page({
 
     // 活动讨论
     discussions: [],
+
+    // 评论相关
+    showCommentModal: false,
+    showEditCommentModal: false,
+    currentCheckinId: null,
+    currentCommentId: null,
+    currentCommentIndex: null,
+    commentContent: '',
+    editCommentContent: '',
   },
 
   onLoad(options) {
@@ -542,11 +551,269 @@ Page({
   commentCheckin(e) {
     const checkinId = e.currentTarget.dataset.id;
 
-    // 这里应该打开评论输入框或跳转到评论页面
-    wx.showToast({
-      title: '评论功能开发中',
-      icon: 'none'
+    // 显示评论输入框
+    this.showCommentInput(checkinId);
+  },
+
+  // 显示评论输入框
+  showCommentInput(checkinId) {
+    this.setData({
+      showCommentModal: true,
+      currentCheckinId: checkinId,
+      commentContent: ''
     });
+  },
+
+  // 隐藏评论输入框
+  hideCommentInput() {
+    this.setData({
+      showCommentModal: false,
+      currentCheckinId: null,
+      commentContent: ''
+    });
+  },
+
+  // 评论内容输入
+  onCommentInput(e) {
+    this.setData({
+      commentContent: e.detail.value
+    });
+  },
+
+  // 提交评论
+  async submitComment() {
+    if (!this.data.commentContent.trim()) {
+      wx.showToast({
+        title: '请输入评论内容',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo) {
+      wx.showModal({
+        title: '提示',
+        content: '请先登录后再评论',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: '/pages/auth/auth'
+            });
+          }
+        }
+      });
+      return;
+    }
+
+    try {
+      wx.showLoading({
+        title: '发布中...',
+        mask: true
+      });
+
+      const response = await api.checkIn.addComment(this.data.currentCheckinId, {
+        comment: {
+          content: this.data.commentContent.trim()
+        }
+      });
+
+      wx.hideLoading();
+      wx.showToast({
+        title: '评论成功',
+        icon: 'success'
+      });
+
+      // 隐藏评论框
+      this.hideCommentInput();
+
+      // 刷新打卡列表以显示新评论
+      this.loadCheckins();
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('评论失败:', error);
+
+      // 检查是否是认证错误
+      if (error.message && error.message.includes('未授权')) {
+        wx.showModal({
+          title: '登录已过期',
+          content: '请重新登录后继续',
+          confirmText: '去登录',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({
+                url: '/pages/auth/auth'
+              });
+            }
+          }
+        });
+        return;
+      }
+
+      wx.showToast({
+        title: '评论失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 删除评论
+  async deleteComment(e) {
+    const { checkinId, commentId, commentIndex } = e.currentTarget.dataset;
+
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这条评论吗？',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            wx.showLoading({
+              title: '删除中...',
+              mask: true
+            });
+
+            await api.comment.delete(commentId);
+
+            wx.hideLoading();
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success'
+            });
+
+            // 从本地数据中移除评论
+            this.removeCommentFromList(checkinId, commentIndex);
+
+          } catch (error) {
+            wx.hideLoading();
+            console.error('删除评论失败:', error);
+            wx.showToast({
+              title: '删除失败',
+              icon: 'none'
+            });
+          }
+        }
+      }
+    });
+  },
+
+  // 从本地数据中移除评论
+  removeCommentFromList(checkinId, commentIndex) {
+    const checkins = this.data.checkins.map(checkin => {
+      if (checkin.id === checkinId) {
+        const newComments = [...checkin.comments];
+        newComments.splice(commentIndex, 1);
+
+        return {
+          ...checkin,
+          comments: newComments,
+          comments_count: Math.max(0, checkin.comments_count - 1)
+        };
+      }
+      return checkin;
+    });
+
+    this.setData({ checkins });
+  },
+
+  // 编辑评论
+  editComment(e) {
+    const { checkinId, commentId, commentIndex, content } = e.currentTarget.dataset;
+
+    // 显示编辑输入框
+    this.setData({
+      showEditCommentModal: true,
+      currentCheckinId: checkinId,
+      currentCommentId: commentId,
+      currentCommentIndex: commentIndex,
+      editCommentContent: content
+    });
+  },
+
+  // 隐藏编辑评论输入框
+  hideEditCommentInput() {
+    this.setData({
+      showEditCommentModal: false,
+      currentCheckinId: null,
+      currentCommentId: null,
+      currentCommentIndex: null,
+      editCommentContent: ''
+    });
+  },
+
+  // 编辑评论内容输入
+  onEditCommentInput(e) {
+    this.setData({
+      editCommentContent: e.detail.value
+    });
+  },
+
+  // 提交编辑评论
+  async submitEditComment() {
+    if (!this.data.editCommentContent.trim()) {
+      wx.showToast({
+        title: '请输入评论内容',
+        icon: 'none'
+      });
+      return;
+    }
+
+    try {
+      wx.showLoading({
+        title: '更新中...',
+        mask: true
+      });
+
+      const response = await api.comment.update(this.data.currentCommentId, {
+        comment: {
+          content: this.data.editCommentContent.trim()
+        }
+      });
+
+      wx.hideLoading();
+      wx.showToast({
+        title: '更新成功',
+        icon: 'success'
+      });
+
+      // 隐藏编辑框
+      this.hideEditCommentInput();
+
+      // 更新本地数据中的评论
+      this.updateCommentInList(this.data.currentCheckinId, this.data.currentCommentIndex, {
+        content: this.data.editCommentContent.trim()
+      });
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('更新评论失败:', error);
+      wx.showToast({
+        title: '更新失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 更新本地数据中的评论
+  updateCommentInList(checkinId, commentIndex, updatedData) {
+    const checkins = this.data.checkins.map(checkin => {
+      if (checkin.id === checkinId) {
+        const newComments = [...checkin.comments];
+        newComments[commentIndex] = {
+          ...newComments[commentIndex],
+          ...updatedData
+        };
+
+        return {
+          ...checkin,
+          comments: newComments
+        };
+      }
+      return checkin;
+    });
+
+    this.setData({ checkins });
   },
 
   // 分享打卡
@@ -625,5 +892,10 @@ Page({
     if (days < 7) return `${days}天前`;
 
     return date.toLocaleDateString();
+  },
+
+  // 阻止事件冒泡
+  stopPropagation() {
+    // 阻止点击评论内容时关闭弹窗
   }
 });

@@ -237,6 +237,10 @@
                 <view class="comment-header">
                   <text class="comment-name">{{comment.author.nickname}}</text>
                   <text class="comment-time">{{comment.created_at_relative}}</text>
+                  <view class="comment-actions" wx:if="{{comment.author_info.id === userInfo.id}}" catchtap="stopPropagation">
+                    <text class="comment-action edit" bindtap="editComment" data-checkin-id="{{item.id}}" data-comment-id="{{comment.id}}" data-comment-index="{{index}}" data-content="{{comment.content}}">编辑</text>
+                    <text class="comment-action delete" bindtap="deleteComment" data-checkin-id="{{item.id}}" data-comment-id="{{comment.id}}" data-comment-index="{{index}}">删除</text>
+                  </view>
                 </view>
                 <text class="comment-text">{{comment.content}}</text>
               </view>
@@ -330,5 +334,53 @@
     <text class="empty-text">活动不存在</text>
     <text class="empty-desc">该活动可能已被删除或您没有访问权限</text>
     <button class="btn btn-primary" bindtap="goBack">返回列表</button>
+  </view>
+
+  <!-- 评论输入模态框 -->
+  <view class="comment-modal" wx:if="{{showCommentModal}}" bindtap="hideCommentInput">
+    <view class="comment-modal-content" catchtap="stopPropagation">
+      <view class="comment-modal-header">
+        <text class="comment-modal-title">发表评论</text>
+        <text class="comment-modal-close" bindtap="hideCommentInput">×</text>
+      </view>
+      <view class="comment-modal-body">
+        <textarea
+          class="comment-textarea"
+          placeholder="写下你的评论..."
+          value="{{commentContent}}"
+          bindinput="onCommentInput"
+          maxlength="1000"
+          auto-height
+        ></textarea>
+      </view>
+      <view class="comment-modal-footer">
+        <button class="comment-btn cancel" bindtap="hideCommentInput">取消</button>
+        <button class="comment-btn submit" bindtap="submitComment">发送</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑评论模态框 -->
+  <view class="comment-modal" wx:if="{{showEditCommentModal}}" bindtap="hideEditCommentInput">
+    <view class="comment-modal-content" catchtap="stopPropagation">
+      <view class="comment-modal-header">
+        <text class="comment-modal-title">编辑评论</text>
+        <text class="comment-modal-close" bindtap="hideEditCommentInput">×</text>
+      </view>
+      <view class="comment-modal-body">
+        <textarea
+          class="comment-textarea"
+          placeholder="写下你的评论..."
+          value="{{editCommentContent}}"
+          bindinput="onEditCommentInput"
+          maxlength="1000"
+          auto-height
+        ></textarea>
+      </view>
+      <view class="comment-modal-footer">
+        <button class="comment-btn cancel" bindtap="hideEditCommentInput">取消</button>
+        <button class="comment-btn submit" bindtap="submitEditComment">更新</button>
+      </view>
+    </view>
   </view>
 </view>

@@ -485,6 +485,15 @@
   color: var(--error);
 }
 
+.comment-action.delete-comment {
+  color: var(--text-hint);
+}
+
+.comment-action.delete-comment:active {
+  color: var(--error);
+  background: rgba(220, 38, 38, 0.1);
+}
+
 .action-icon {
   font-size: 20rpx;
 }
@@ -583,9 +592,9 @@
 }
 
 .action-btn {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
   background: var(--surface-hover);
   display: flex;
   align-items: center;
@@ -611,7 +620,7 @@
 }
 
 .btn-icon {
-  font-size: 24rpx;
+  font-size: 32rpx;
 }
 
 /* Comment Image Preview */
@@ -817,11 +826,12 @@
   }
 
   .action-btn {
-    width: 40rpx;
-    height: 40rpx;
+    width: 60rpx;
+    height: 60rpx;
+    border-radius: 30rpx;
   }
 
   .btn-icon {
-    font-size: 20rpx;
+    font-size: 28rpx;
   }
 }

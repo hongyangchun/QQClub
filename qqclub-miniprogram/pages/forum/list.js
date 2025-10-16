@@ -24,7 +24,7 @@ Page({
 
   onLoad(options) {
     this.setData({
-      userId: wx.getStorageSync('userId') || null
+      userId: wx.getStorageSync('userInfo')?.id || null
     });
     this.getUserInfo();
     this.loadPosts(true);
@@ -160,6 +160,27 @@ Page({
       }
     } catch (error) {
       console.error('加载帖子失败:', error);
+
+      // 检查是否是认证错误
+      if (error.message && error.message.includes('未授权')) {
+        // 认证失败，清除本地存储并跳转到登录页
+        wx.removeStorageSync('token');
+        wx.removeStorageSync('userInfo');
+        wx.showModal({
+          title: '登录已过期',
+          content: '请重新登录后继续使用',
+          confirmText: '去登录',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({
+                url: '/pages/auth/auth'
+              });
+            }
+          }
+        });
+        return;
+      }
+
       wx.showToast({
         title: '加载失败',
         icon: 'none'
@@ -332,6 +353,12 @@ Page({
     const postId = e.currentTarget.dataset.id;
     const post = this.data.posts.find(p => p.id === postId);
 
+    if (!post) {
+      console.warn('Post not found for ID:', postId);
+      return;
+    }
+
+    console.log('Setting currentPost:', post);
     this.setData({
       showMoreMenu: true,
       currentPost: post
@@ -362,22 +389,77 @@ Page({
   },
 
   // 删除帖子
-  deletePost() {
-    if (!this.data.currentPost) return;
+  async deletePost() {
+    if (!this.data.currentPost) {
+      console.warn('currentPost is null, cannot delete');
+      return;
+    }
+
+    const postId = this.data.currentPost.id;
+    if (!postId) {
+      console.warn('currentPost.id is null, cannot delete');
+      return;
+    }
+
+    // 先保存帖子信息，避免在操作过程中被重置
+    const postToDelete = this.data.currentPost;
 
     wx.showModal({
       title: '确认删除',
       content: '删除后将无法恢复，确定要删除这个帖子吗？',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
           this.hideMoreMenu();
-          // 这里调用删除API
-          wx.showToast({
-            title: '删除成功',
-            icon: 'success'
-          });
-          // 重新加载列表
-          this.loadPosts(true);
+
+          try {
+            // 显示删除中状态
+            wx.showLoading({
+              title: '删除中...',
+              mask: true
+            });
+
+            // 调用删除API
+            await api.post.delete(postId);
+
+            wx.hideLoading();
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success'
+            });
+
+            // 从本地列表中立即移除帖子，提供更好的用户体验
+            const newPosts = this.data.posts.filter(post => post.id !== postId);
+            this.setData({
+              posts: newPosts,
+              currentPost: null // 确保清除currentPost
+            });
+
+            // 然后重新加载列表以确保数据同步
+            setTimeout(() => {
+              this.loadPosts(true);
+            }, 1000);
+          } catch (error) {
+            wx.hideLoading();
+            console.error('删除帖子失败:', error);
+
+            // 根据错误类型显示不同的提示
+            let errorMessage = '删除失败';
+            if (error.message) {
+              if (error.message.includes('权限')) {
+                errorMessage = '无权限删除此帖子';
+              } else if (error.message.includes('未找到')) {
+                errorMessage = '帖子不存在';
+              } else if (error.message.includes('未授权')) {
+                errorMessage = '登录已过期，请重新登录';
+              }
+            }
+
+            wx.showToast({
+              title: errorMessage,
+              icon: 'none',
+              duration: 2000
+            });
+          }
         }
       }
     });

@@ -45,12 +45,26 @@ class AuthenticationService < ApplicationService
     # 优先使用顶级参数，如果没有则使用嵌套的user参数
     openid = login_params[:openid] || login_params.dig(:user, :wx_openid) || login_params.dig(:user, :openid) || "test_dhh_001"
     nickname = login_params[:nickname] || login_params.dig(:user, :nickname) || "DHH"
-    avatar_url = login_params[:avatar_url] || login_params.dig(:user, :avatar_url) || "https://example.com/avatar.jpg"
+    avatar_url = login_params[:avatar_url] || login_params.dig(:user, :avatar_url)
 
     # 查找或创建用户
     @user = User.find_or_create_by(wx_openid: openid) do |u|
       u.nickname = nickname
-      u.avatar_url = avatar_url
+      # 如果没有提供头像，生成一个随机头像
+      u.avatar_url = avatar_url.presence || AvatarGeneratorService.generate_themed_avatar(
+        nickname: nickname,
+        user_id: openid
+      )
+    end
+
+    # 如果用户已存在但没有头像，也生成一个
+    if @user.avatar_url.blank? || @user.avatar_url.include?('example.com/avatar.jpg')
+      @user.update!(
+        avatar_url: AvatarGeneratorService.generate_themed_avatar(
+          nickname: @user.nickname,
+          user_id: @user.id
+        )
+      )
     end
 
     generate_token_response
@@ -61,14 +75,50 @@ class AuthenticationService < ApplicationService
     code = login_params[:code]
     return failure!("缺少 code 参数") unless code
 
-    # 调用微信 API 获取 openid
-    wechat_result = fetch_wechat_openid(code)
-    return failure!("微信登录失败") unless wechat_result
+    # 获取小程序传递的用户信息
+    user_info = login_params[:user_info] || {}
+    openid = login_params[:openid] || user_info[:openid]
+    unionid = login_params[:unionid] || user_info[:unionid]
+    nickname = login_params[:nickname] || user_info[:nickname]
+    avatar_url = login_params[:avatar_url] || login_params[:avatarUrl] || user_info[:avatar_url] || user_info[:avatarUrl]
+
+    # 如果没有直接提供用户信息，尝试调用微信API获取
+    if openid.blank? && code.present?
+      wechat_result = fetch_wechat_openid(code)
+
+      # 如果是测试环境且有用户信息，生成测试openid
+      if wechat_result.nil? && user_info.present?
+        openid = "test_wechat_#{Time.current.to_i}_#{rand(1000)}"
+        Rails.logger.info "使用测试openid: #{openid} for user: #{user_info[:nickname]}"
+      else
+        return failure!("微信登录失败") unless wechat_result
+        openid = wechat_result[:openid]
+        unionid = wechat_result[:unionid]
+      end
+    end
+
+    return failure!("无法获取用户标识") unless openid
 
     # 查找或创建用户
-    @user = User.find_or_create_by(wx_openid: wechat_result[:openid]) do |u|
-      u.wx_unionid = wechat_result[:unionid]
-      u.nickname = "用户#{rand(1000..9999)}"
+    @user = User.find_or_create_by(wx_openid: openid) do |u|
+      u.wx_unionid = unionid if unionid.present?
+      u.nickname = nickname.presence || "用户#{rand(1000..9999)}"
+      # 优先使用微信提供的真实头像，如果没有则生成默认头像
+      u.avatar_url = if avatar_url.present?
+                      avatar_url
+                    else
+                      AvatarGeneratorService.generate_themed_avatar(
+                        nickname: u.nickname,
+                        user_id: openid
+                      )
+                    end
+    end
+
+    # 如果用户已存在但头像为空或使用了默认头像，且当前提供了新头像，则更新
+    if avatar_url.present? && (@user.avatar_url.blank? || @user.avatar_url.include?('example.com/avatar.jpg'))
+      update_attrs = { avatar_url: avatar_url }
+      update_attrs[:nickname] = nickname if nickname.present?
+      @user.update!(update_attrs)
     end
 
     generate_token_response
@@ -76,10 +126,12 @@ class AuthenticationService < ApplicationService
 
   # 生成Token响应
   def generate_token_response
-    token = @user.generate_jwt_token
+    access_token = @user.generate_jwt_token
+    refresh_token = @user.generate_refresh_token
 
     success!({
-      token: token,
+      access_token: access_token,
+      refresh_token: refresh_token,
       user: user_data(@user)
     })
   end

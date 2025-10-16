@@ -58,37 +58,62 @@ Page({
   // 加载帖子数据（编辑模式）
   async loadPostData(postId) {
     try {
-      // 这里应该调用API获取帖子数据
-      // const response = await api.getPost(postId);
+      // 调用API获取帖子数据
+      const response = await api.post.getDetail(postId);
 
-      // 模拟数据
-      const mockPost = {
-        id: postId,
-        title: '这是一个编辑的帖子标题',
-        content: '这是帖子内容，正在编辑中...',
-        category: 'reading',
-        images: ['https://picsum.photos/300/200?random=1'],
-        tags: ['小说', '读书'],
-        allow_comment: true,
-        anonymous: false
-      };
+      if (response) {
+        // 检查当前用户是否有编辑权限
+        const userInfo = wx.getStorageSync('userInfo');
+        const isAuthor = userInfo && userInfo.id === (response.author?.id || response.author_info?.id || response.user_id);
 
-      this.setData({
-        title: mockPost.title,
-        content: mockPost.content,
-        selectedCategory: mockPost.category,
-        images: mockPost.images || [],
-        tags: mockPost.tags || [],
-        allowComment: mockPost.allow_comment,
-        anonymous: mockPost.anonymous
-      });
+        if (!isAuthor) {
+          wx.showToast({
+            title: '无权限编辑此帖子',
+            icon: 'none'
+          });
+          setTimeout(() => {
+            wx.navigateBack();
+          }, 1500);
+          return;
+        }
+
+        this.setData({
+          title: response.title || '',
+          content: response.content || '',
+          selectedCategory: response.category || '',
+          images: response.images || [],
+          tags: response.tags || [],
+          allowComment: response.allow_comment !== false, // 默认为true
+          anonymous: response.anonymous || false
+        });
+      } else {
+        throw new Error('帖子不存在');
+      }
 
     } catch (error) {
       console.error('加载帖子数据失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
+
+      // 检查是否是权限错误
+      if (error.message && error.message.includes('权限')) {
+        wx.showToast({
+          title: '无权限编辑此帖子',
+          icon: 'none'
+        });
+      } else if (error.message && error.message.includes('未找到')) {
+        wx.showToast({
+          title: '帖子不存在或已被删除',
+          icon: 'none'
+        });
+      } else {
+        wx.showToast({
+          title: '加载失败，请重试',
+          icon: 'none'
+        });
+      }
+
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1500);
     }
   },
 
@@ -402,6 +427,24 @@ Page({
 
     } catch (error) {
       console.error('发布帖子失败:', error);
+
+      // 检查是否是认证错误
+      if (error.message && error.message.includes('未授权')) {
+        wx.showModal({
+          title: '登录已过期',
+          content: '您的登录已过期，请重新登录后继续',
+          confirmText: '去登录',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({
+                url: '/pages/auth/auth'
+              });
+            }
+          }
+        });
+        return;
+      }
+
       wx.showToast({
         title: this.data.isEditing ? '保存失败' : '发布失败',
         icon: 'none'

@@ -1,11 +1,19 @@
 class Comment < ApplicationRecord
-  belongs_to :post
+  belongs_to :post, optional: true
   belongs_to :user
+  belongs_to :commentable, polymorphic: true
 
   # 验证
   validates :content, presence: true, length: { minimum: 2, maximum: 1000 }
+  validates :commentable, presence: true, if: :should_validate_commentable?
 
-  # 权限检查方法
+  private
+
+  def should_validate_commentable?
+    commentable_type != 'CheckIn'
+  end
+
+  # 权限检查方法 - 改为公共方法
   def can_edit?(current_user)
     return false unless current_user
     return true if current_user.any_admin?  # 管理员可以编辑任何评论
@@ -33,14 +41,39 @@ class Comment < ApplicationRecord
 
   # JSON 序列化方法
   def as_json(options = {})
-    super({
-      methods: [:author_info, :time_ago, :can_edit_current_user],
-      include: {
-        user: {
-          only: [:id, :nickname, :avatar_url]
-        }
+    json_hash = {
+      id: id,
+      content: content,
+      created_at: created_at,
+      updated_at: updated_at,
+      author_info: author_info,
+      time_ago: time_ago,
+      can_edit_current_user: @can_edit_current_user || false
+    }
+
+    # 如果有关联的用户信息，包含用户数据
+    if associated_user_loaded?
+      json_hash[:user] = {
+        id: user.id,
+        nickname: user.nickname,
+        avatar_url: user.avatar_url
       }
-    }.merge(options))
+    end
+
+    json_hash
+  end
+
+  # 设置当前用户是否可编辑的权限 - 改为公共方法
+  def can_edit_current_user=(value)
+    @can_edit_current_user = value
+  end
+
+  # 检查用户数据是否已预加载 - 改为公共方法
+  def associated_user_loaded?
+    loaded_associations = association(:user).loaded?
+    loaded_associations
+  rescue
+    false
   end
 
   private
@@ -52,10 +85,5 @@ class Comment < ApplicationRecord
       avatar_url: user.avatar_url,
       role: user.role_display_name
     }
-  end
-
-  def can_edit_current_user
-    # 这个方法会在控制器中设置
-    @can_edit_current_user || false
   end
 end

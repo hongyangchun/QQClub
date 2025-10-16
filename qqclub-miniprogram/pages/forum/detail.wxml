@@ -115,7 +115,7 @@
 
     <!-- 评论列表 -->
     <view class="comments-list" wx:if="{{comments.length > 0}}">
-      <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+      <view class="comment-item" wx:for="{{comments}}" wx:key="id" bindtap="focusCommentInput">
         <image class="comment-avatar" src="{{item.author.avatar_url}}" mode="aspectFill"></image>
 
         <view class="comment-content">
@@ -155,15 +155,20 @@
           </view>
 
           <!-- 评论操作 -->
-          <view class="comment-actions">
-            <view class="comment-action {{item.is_liked ? 'liked' : ''}}" bindtap="likeComment" data-id="{{item.id}}">
+          <view class="comment-actions" catchtap="stopPropagation">
+            <view class="comment-action {{item.is_liked ? 'liked' : ''}}" catchtap="likeComment" data-id="{{item.id}}">
               <text class="action-icon">{{item.is_liked ? '❤️' : '🤍'}}</text>
               <text class="action-count">{{item.likes_count}}</text>
             </view>
 
-            <view class="comment-action" bindtap="replyToComment" data-comment="{{item}}">
+            <view class="comment-action" catchtap="replyToComment" data-comment="{{item}}">
               <text class="action-icon">💬</text>
               <text class="action-text">回复</text>
+            </view>
+
+            <view class="comment-action delete-comment" wx:if="{{item.is_author}}" catchtap="deleteComment" data-id="{{item.id}}" data-index="{{index}}">
+              <text class="action-icon">🗑️</text>
+              <text class="action-text">删除</text>
             </view>
           </view>
         </view>
@@ -197,26 +202,8 @@
       </input>
 
       <view class="input-actions">
-        <view class="action-btn" bindtap="chooseImage" wx:if="{{!commentImages.length}}">
-          <text class="btn-icon">📷</text>
-        </view>
-
-        <view class="action-btn image-preview" bindtap="previewImage" data-urls="{{commentImages}}" data-current="{{commentImages[0]}}" wx:if="{{commentImages.length}}">
-          <text class="btn-icon">📷</text>
-        </view>
-
-        <view class="action-btn send-btn {{commentText.trim() || commentImages.length ? 'active' : ''}}" bindtap="submitComment">
+        <view class="action-btn send-btn {{commentText.trim() ? 'active' : ''}}" bindtap="submitComment">
           <text class="btn-icon">📤</text>
-        </view>
-      </view>
-
-      <!-- 评论图片预览 -->
-      <view class="comment-image-preview" wx:if="{{commentImages.length > 0}}">
-        <view class="preview-item" wx:for="{{commentImages}}" wx:key="index">
-          <image class="preview-image" src="{{item}}" mode="aspectFill"></image>
-          <view class="remove-image" bindtap="removeCommentImage" data-index="{{index}}">
-            <text class="remove-icon">×</text>
-          </view>
         </view>
       </view>
     </view>

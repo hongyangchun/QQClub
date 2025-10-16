@@ -18,7 +18,6 @@ Page({
     // 评论输入
     showCommentInput: false,
     commentText: '',
-    commentImages: [],
     replyingTo: null,
 
     // 更多操作
@@ -75,6 +74,13 @@ Page({
 
       let postData = response;
 
+      // 规范化API响应数据，确保模板能正确访问
+      if (response && !response.author && response.author_info) {
+        postData.author = response.author_info;
+      } else if (response && !response.author && response.user) {
+        postData.author = response.user;
+      }
+
       // 如果API调用失败，使用模拟数据作为回退
       if (!response) {
         postData = {
@@ -89,6 +95,17 @@ Page({
             nickname: '文学爱好者',
             avatar_url: 'https://picsum.photos/100/100?random=1',
             badge: '活跃用户'
+          },
+          author_info: {
+            id: 1,
+            nickname: '文学爱好者',
+            avatar_url: 'https://picsum.photos/100/100?random=1',
+            role: '用户'
+          },
+          user: {
+            id: 1,
+            nickname: '文学爱好者',
+            avatar_url: 'https://picsum.photos/100/100?random=1'
           },
           tags: ['百年孤独', '马尔克斯', '魔幻现实主义', '读书心得'],
           images: [
@@ -107,11 +124,12 @@ Page({
 
       // 检查是否是作者
       const userInfo = wx.getStorageSync('userInfo');
-      const isAuthor = userInfo && userInfo.id === postData.author.id;
+      const isAuthor = userInfo && userInfo.id === (postData.author?.id || postData.author_info?.id || postData.user_id);
 
       this.setData({
         postInfo: postData,
-        isAuthor: isAuthor
+        isAuthor: isAuthor,
+        loading: false
       });
 
       // 设置页面标题
@@ -121,6 +139,7 @@ Page({
 
     } catch (error) {
       console.error('加载帖子详情失败:', error);
+      this.setData({ loading: false });
       wx.showToast({
         title: '加载失败',
         icon: 'none'
@@ -157,7 +176,29 @@ Page({
         hasMore = this.data.page < 3; // 模拟最多3页
       }
 
-      const newComments = this.data.page === 1 ? commentsData : [...this.data.comments, ...commentsData];
+      // 规范化评论数据，确保模板能正确访问
+      const userInfo = wx.getStorageSync('userInfo');
+      const currentUserId = userInfo?.id;
+
+      const normalizedComments = commentsData.map(comment => {
+        if (!comment.author && comment.author_info) {
+          comment.author = comment.author_info;
+        } else if (!comment.author && comment.user) {
+          comment.author = comment.user;
+        }
+
+        // 判断是否为当前用户的评论
+        comment.is_author = currentUserId && (
+          comment.author?.id === currentUserId ||
+          comment.author_info?.id === currentUserId ||
+          comment.user?.id === currentUserId ||
+          comment.user_id === currentUserId
+        );
+
+        return comment;
+      });
+
+      const newComments = this.data.page === 1 ? normalizedComments : [...this.data.comments, ...normalizedComments];
 
       this.setData({
         comments: newComments,
@@ -189,19 +230,22 @@ Page({
   generateMockComments() {
     const comments = [];
     const count = this.data.page === 1 ? 10 : 5;
+    const userInfo = wx.getStorageSync('userInfo');
+    const currentUserId = userInfo?.id;
 
     for (let i = 0; i < count; i++) {
       const floor = (this.data.page - 1) * 10 + i + 1;
       const likesCount = Math.floor(Math.random() * 20) + 5;
+      const isAuthor = Math.random() > 0.8; // 20% 概率是当前用户的评论
 
       comments.push({
         id: Date.now() + i,
         floor: floor,
         content: this.generateCommentContent(i),
         author: {
-          id: Math.floor(Math.random() * 100) + 1,
-          nickname: `用户${Math.floor(Math.random() * 1000) + 1}`,
-          avatar_url: `https://picsum.photos/50/50?random=${Math.floor(Math.random() * 100)}`,
+          id: isAuthor && currentUserId ? currentUserId : Math.floor(Math.random() * 100) + 1,
+          nickname: isAuthor && currentUserId ? (userInfo.nickname || '我') : `用户${Math.floor(Math.random() * 1000) + 1}`,
+          avatar_url: isAuthor && currentUserId ? (userInfo.avatar_url || `https://picsum.photos/50/50?random=${currentUserId}`) : `https://picsum.photos/50/50?random=${Math.floor(Math.random() * 100)}`,
           badge: Math.random() > 0.7 ? '活跃用户' : null
         },
         likes_count: likesCount,
@@ -209,7 +253,8 @@ Page({
         created_at: this.getRandomTime(),
         images: Math.random() > 0.8 ? [`https://picsum.photos/200/200?random=${Math.floor(Math.random() * 100)}`] : [],
         replies: this.generateReplies(Math.random() > 0.6 ? Math.floor(Math.random() * 3) + 1 : 0),
-        replies_count: Math.random() > 0.6 ? Math.floor(Math.random() * 3) + 1 : 0
+        replies_count: Math.random() > 0.6 ? Math.floor(Math.random() * 3) + 1 : 0,
+        is_author: isAuthor && currentUserId
       });
     }
 
@@ -445,16 +490,22 @@ Page({
   },
 
   // 删除帖子
-  deletePost() {
+  async deletePost() {
     wx.showModal({
       title: '删除帖子',
       content: '确定要删除这个帖子吗？删除后无法恢复。',
       success: async (res) => {
         if (res.confirm) {
           try {
+            wx.showLoading({
+              title: '删除中...',
+              mask: true
+            });
+
             // 调用API删除帖子
             await api.post.delete(this.data.postId);
 
+            wx.hideLoading();
             wx.showToast({
               title: '删除成功',
               icon: 'success'
@@ -465,14 +516,75 @@ Page({
             }, 1500);
 
           } catch (error) {
+            wx.hideLoading();
             console.error('删除失败:', error);
+
+            // 根据错误类型显示不同的提示
+            let errorMessage = '删除失败';
+            if (error.message) {
+              if (error.message.includes('权限')) {
+                errorMessage = '无权限删除此帖子';
+              } else if (error.message.includes('未找到')) {
+                errorMessage = '帖子不存在';
+              } else if (error.message.includes('未授权')) {
+                errorMessage = '登录已过期，请重新登录';
+              }
+            }
+
+            wx.showToast({
+              title: errorMessage,
+              icon: 'none',
+              duration: 2000
+            });
+          }
+        }
+        this.hideActionModal();
+      }
+    });
+  },
+
+  // 删除评论
+  deleteComment(e) {
+    const commentId = e.currentTarget.dataset.id;
+    const commentIndex = e.currentTarget.dataset.index;
+
+    wx.showModal({
+      title: '删除评论',
+      content: '确定要删除这条评论吗？删除后无法恢复。',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({
+            title: '删除中...',
+            mask: true
+          });
+
+          try {
+            // 调用API删除评论
+            await api.comment.delete(commentId);
+
+            // 从本地数据中移除评论
+            const newComments = this.data.comments.filter((_, index) => index !== commentIndex);
+
+            this.setData({
+              comments: newComments,
+              'postInfo.comments_count': Math.max(0, (this.data.postInfo.comments_count || 0) - 1)
+            });
+
+            wx.hideLoading();
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success'
+            });
+
+          } catch (error) {
+            console.error('删除评论失败:', error);
+            wx.hideLoading();
             wx.showToast({
               title: '删除失败',
               icon: 'none'
             });
           }
         }
-        this.hideActionModal();
       }
     });
   },
@@ -556,7 +668,7 @@ Page({
   onCommentBlur() {
     // 延迟隐藏，让用户有时间点击按钮
     setTimeout(() => {
-      if (!this.data.commentText.trim() && this.data.commentImages.length === 0) {
+      if (!this.data.commentText.trim()) {
         this.setData({
           showCommentInput: false,
           replyingTo: null
@@ -565,35 +677,10 @@ Page({
     }, 200);
   },
 
-  // 选择图片
-  chooseImage() {
-    const maxCount = 3 - this.data.commentImages.length;
-
-    wx.chooseImage({
-      count: maxCount,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const newImages = [...this.data.commentImages, ...res.tempFilePaths];
-        this.setData({
-          commentImages: newImages
-        });
-      }
-    });
-  },
-
-  // 移除评论图片
-  removeCommentImage(e) {
-    const index = e.currentTarget.dataset.index;
-    const newImages = this.data.commentImages.filter((_, i) => i !== index);
-    this.setData({
-      commentImages: newImages
-    });
-  },
-
+  
   // 提交评论
   async submitComment() {
-    if (!this.data.commentText.trim() && this.data.commentImages.length === 0) {
+    if (!this.data.commentText.trim()) {
       wx.showToast({
         title: '请输入评论内容',
         icon: 'none'
@@ -625,23 +712,32 @@ Page({
         await this.loadComments();
       } else {
         // 如果API调用失败，创建本地评论作为回退
+        const userInfo = wx.getStorageSync('userInfo');
         const newComment = {
           id: Date.now(),
           floor: this.data.comments.length + 1,
           content: this.data.commentText.trim(),
           author: {
-            id: 1,
-            nickname: '我',
-            avatar_url: 'https://picsum.photos/50/50?random=me',
+            id: userInfo?.id || 1,
+            nickname: userInfo?.nickname || '我',
+            avatar_url: userInfo?.avatar_url || 'https://picsum.photos/50/50?random=me',
             badge: null
           },
+          author_info: {
+            id: userInfo?.id || 1,
+            nickname: userInfo?.nickname || '我',
+            avatar_url: userInfo?.avatar_url || 'https://picsum.photos/50/50?random=me',
+            role: '用户'
+          },
+          user_id: userInfo?.id || 1,
           likes_count: 0,
           liked_by_current_user: false,
           is_liked: false,
           created_at: '刚刚',
-          images: this.data.commentImages,
+          images: [],
           replies: [],
-          replies_count: 0
+          replies_count: 0,
+          is_author: true // 自己发送的评论
         };
 
         // 如果是回复，添加到对应评论的回复列表
@@ -679,7 +775,6 @@ Page({
       // 清空输入
       this.setData({
         commentText: '',
-        commentImages: [],
         replyingTo: null,
         showCommentInput: false,
         'postInfo.comments_count': (this.data.postInfo.comments_count || 0) + 1

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_101206) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_121915) do
   create_table "check_ins", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "reading_schedule_id", null: false
@@ -29,10 +29,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_101206) do
 
   create_table "comments", force: :cascade do |t|
     t.text "content"
-    t.integer "post_id", null: false
+    t.integer "post_id"
     t.integer "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "commentable_type"
+    t.integer "commentable_id"
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
+    t.index ["created_at"], name: "index_comments_on_created_at"
+    t.index ["post_id", "created_at"], name: "index_comments_on_post_id_and_created_at"
     t.index ["post_id"], name: "index_comments_on_post_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
   end

@@ -5,6 +5,7 @@ class CheckIn < ApplicationRecord
   belongs_to :enrollment
   has_one :flower, dependent: :destroy
   has_one :reading_event, through: :reading_schedule
+  has_many :comments, as: :commentable, dependent: :destroy
 
   # 验证
   validates :content, presence: true, length: { minimum: 100 }

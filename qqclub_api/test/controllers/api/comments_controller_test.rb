@@ -11,7 +11,8 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     @comment = Comment.create!(
       content: "Test comment",
       user: @user,
-      post: @post
+      post: @post,
+      commentable: @post
     )
   end
 
@@ -42,10 +43,12 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    assert json_response.is_a?(Array)
-    assert_equal 1, json_response.length
+    assert_equal true, json_response['success']
+    assert json_response['data'].is_a?(Array)
+    assert_equal 1, json_response['data'].length
+    assert_equal '获取评论列表成功', json_response['message']
 
-    comment_data = json_response.first
+    comment_data = json_response['data'].first
     assert_equal @comment.content, comment_data['content']
     assert_equal @user.id, comment_data['author_info']['id']
     assert_equal @user.nickname, comment_data['author_info']['nickname']
@@ -59,7 +62,7 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    comment_data = json_response.first
+    comment_data = json_response['data'].first
     assert_equal false, comment_data['can_edit_current_user'] # 其他用户不能编辑
 
     # 管理员查看
@@ -67,7 +70,7 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    comment_data = json_response.first
+    comment_data = json_response['data'].first
     assert_equal true, comment_data['can_edit_current_user'] # 管理员可以编辑
   end
 
@@ -78,7 +81,7 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    assert_equal [], json_response
+    assert_equal [], json_response['data']
   end
 
   test "should return not found for non-existent post" do
@@ -86,14 +89,15 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
 
     json_response = JSON.parse(response.body)
+    assert_equal false, json_response['success']
     assert_equal '帖子不存在', json_response['error']
   end
 
   test "should order comments by created_at ascending" do
     # 创建多个评论
-    comment1 = Comment.create!(content: "First comment", user: @user, post: @post, created_at: 1.hour.ago)
-    comment2 = Comment.create!(content: "Second comment", user: @other_user, post: @post, created_at: 30.minutes.ago)
-    comment3 = Comment.create!(content: "Third comment", user: @user, post: @post, created_at: 2.hours.ago)
+    comment1 = Comment.create!(content: "First comment", user: @user, post: @post, commentable: @post, created_at: 1.hour.ago)
+    comment2 = Comment.create!(content: "Second comment", user: @other_user, post: @post, commentable: @post, created_at: 30.minutes.ago)
+    comment3 = Comment.create!(content: "Third comment", user: @user, post: @post, commentable: @post, created_at: 2.hours.ago)
 
     get "/api/posts/#{@post.id}/comments", headers: authenticate_user(@user)
     assert_response :success
@@ -116,10 +120,11 @@ class Api::CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :created
 
     json_response = JSON.parse(response.body)
+    assert_equal true, json_response['success']
     assert_equal '评论发布成功', json_response['message']
-    assert json_response['comment']
-    assert_equal "This is a new comment", json_response['comment']['content']
-    assert_equal true, json_response['comment']['can_edit_current_user']
+    assert json_response['data']
+    assert_equal "This is a new comment", json_response['data']['content']
+    assert_equal true, json_response['data']['can_edit_current_user']
 
     # 验证评论确实被创建了
     assert_equal "This is a new comment", Comment.last.content

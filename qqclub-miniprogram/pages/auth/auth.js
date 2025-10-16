@@ -32,20 +32,22 @@ Page({
     this.setData({ wechatLoading: true })
 
     try {
-      // 直接模拟登录成功，用于开发测试
-      const mockResponse = {
-        token: 'mock_token_' + Date.now(),
-        user: {
-          id: 1,
-          openid: 'test_dhh_001',
-          nickname: 'DHH',
-          avatar_url: 'https://picsum.photos/100/100?random=dhh',
-          role: 'user',
-          created_at: new Date().toISOString()
-        }
+      // 使用真实的API进行模拟登录
+      const mockData = {
+        openid: 'test_dhf_001',
+        nickname: 'DHH',
+        avatar_url: 'https://picsum.photos/100/100?random=dhh'
       }
 
-      await this.handleLoginSuccess(mockResponse)
+      const response = await api.auth.mockLogin(mockData)
+
+      // 支持新的响应格式（access_token）和旧的格式（token）
+      if ((response.access_token || response.token) && response.user) {
+        await this.handleLoginSuccess(response)
+      } else {
+        console.log('登录响应格式问题:', response)
+        app.showToast('登录失败，请重试')
+      }
     } catch (error) {
       console.error('模拟登录失败:', error)
       app.showToast('登录失败，请重试')
@@ -79,13 +81,29 @@ Page({
         throw new Error('获取微信登录凭证失败')
       }
 
-      // 调用后端微信登录接口
-      const response = await api.auth.wechatLogin(loginRes.code)
+      // 准备登录数据，包含用户信息
+      const loginData = {
+        code: loginRes.code,
+        user_info: {
+          openid: '', // 将在后端通过code获取
+          unionid: '', // 将在后端通过code获取
+          nickname: userInfo.nickName,
+          avatarUrl: userInfo.avatarUrl,
+          gender: userInfo.gender,
+          city: userInfo.city,
+          province: userInfo.province,
+          country: userInfo.country
+        }
+      }
 
-      // 后端直接返回数据，不需要检查 success 字段
-      if (response.token && response.user) {
+      // 调用后端微信登录接口
+      const response = await api.auth.wechatLogin(loginData)
+
+      // 后端直接返回数据，支持新的token格式
+      if ((response.access_token || response.token) && response.user) {
         await this.handleLoginSuccess(response)
       } else {
+        console.log('微信登录响应格式问题:', response)
         app.showToast('微信登录失败，请重试')
       }
     } catch (error) {
@@ -99,14 +117,22 @@ Page({
   
   // 处理登录成功
   async handleLoginSuccess(data) {
-    const { token, user } = data
+    const { access_token, token, refresh_token, user } = data
+
+    // 优先使用新的access_token格式，如果没有则使用旧的token格式
+    const finalToken = access_token || token
 
     // 保存到本地存储
-    wx.setStorageSync('token', token)
+    wx.setStorageSync('token', finalToken)
     wx.setStorageSync('userInfo', user)
 
+    // 如果有refresh token，也保存起来
+    if (refresh_token) {
+      wx.setStorageSync('refreshToken', refresh_token)
+    }
+
     // 更新全局数据
-    app.globalData.token = token
+    app.globalData.token = finalToken
     app.globalData.userInfo = user
 
     app.showToast('登录成功', 'success')

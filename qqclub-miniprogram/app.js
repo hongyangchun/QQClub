@@ -30,8 +30,8 @@ App({
       this.globalData.token = token
       this.globalData.userInfo = userInfo
 
-      // 验证token有效性（静默验证，失败也不影响用户体验）
-      this.validateToken(token)
+      // 检查token状态，如果过期会自动刷新
+      this.checkTokenStatus()
     }
   },
 
@@ -52,37 +52,40 @@ App({
   // 登录方法
   login() {
     return new Promise((resolve, reject) => {
-      wx.login({
-        success: res => {
-          if (res.code) {
-            // 调用后端登录接口
-            this.request({
-              url: '/api/auth/mock_login',
-              method: 'POST',
-              data: {
-                code: res.code
-              }
-            }).then(response => {
-              if (response.success) {
-                // 保存token和用户信息
-                wx.setStorageSync('token', response.data.token)
-                wx.setStorageSync('userInfo', response.data.user)
-                this.globalData.token = response.data.token
-                this.globalData.userInfo = response.data.user
-                resolve(response.data)
-              } else {
-                reject(response)
-              }
-            }).catch(error => {
-              reject(error)
-            })
-          } else {
-            reject(new Error('获取微信登录凭证失败'))
+      // 使用模拟登录数据
+      const mockData = {
+        openid: 'test_dhf_001',
+        nickname: 'DHH',
+        avatar_url: 'https://picsum.photos/100/100?random=dhh'
+      }
+
+      this.request({
+        url: '/api/auth/mock_login',
+        method: 'POST',
+        data: mockData
+      }).then(response => {
+        if (response.access_token && response.user) {
+          // 保存access token和refresh token
+          wx.setStorageSync('token', response.access_token)
+          if (response.refresh_token) {
+            wx.setStorageSync('refreshToken', response.refresh_token)
           }
-        },
-        fail: error => {
-          reject(error)
+          wx.setStorageSync('userInfo', response.user)
+          this.globalData.token = response.access_token
+          this.globalData.userInfo = response.user
+          resolve(response)
+        } else if (response.token && response.user) {
+          // 兼容旧的响应格式
+          wx.setStorageSync('token', response.token)
+          wx.setStorageSync('userInfo', response.user)
+          this.globalData.token = response.token
+          this.globalData.userInfo = response.user
+          resolve(response)
+        } else {
+          reject(response)
         }
+      }).catch(error => {
+        reject(error)
       })
     })
   },
@@ -96,7 +99,7 @@ App({
         'Authorization': `Bearer ${token}`
       }
     }).then(response => {
-      if (!response.success) {
+      if (!response.id) {
         // token失效，清除本地存储
         wx.removeStorageSync('token')
         wx.removeStorageSync('userInfo')
@@ -120,10 +123,92 @@ App({
     })
   },
 
+  // 刷新token
+  async refreshToken() {
+    const refreshToken = wx.getStorageSync('refreshToken')
+    if (!refreshToken) {
+      console.log('没有refresh token，需要重新登录')
+      return false
+    }
+
+    try {
+      console.log('正在刷新token...')
+      const response = await this.request({
+        url: '/api/auth/refresh_token',
+        method: 'POST',
+        data: {
+          refresh_token: refreshToken
+        },
+        skipAuth: true  // 刷新token不需要认证
+      })
+
+      if (response.access_token) {
+        // 保存新的token
+        wx.setStorageSync('token', response.access_token)
+        this.globalData.token = response.access_token
+
+        // 如果返回了新的refresh token，也保存它
+        if (response.refresh_token) {
+          wx.setStorageSync('refreshToken', response.refresh_token)
+        }
+
+        // 更新用户信息
+        if (response.user) {
+          wx.setStorageSync('userInfo', response.user)
+          this.globalData.userInfo = response.user
+        }
+
+        console.log('Token刷新成功')
+        return true
+      } else {
+        console.log('Token刷新失败，响应格式错误')
+        return false
+      }
+    } catch (error) {
+      console.log('Token刷新失败:', error.message)
+      // 刷新失败，清除所有认证信息
+      this.clearAuthData()
+      return false
+    }
+  },
+
+  // 检查token是否需要刷新
+  async checkTokenStatus() {
+    const token = wx.getStorageSync('token')
+    if (!token) return false
+
+    try {
+      // 尝试使用当前token获取用户信息
+      await this.request({
+        url: '/api/auth/me',
+        method: 'GET'
+      })
+      return true
+    } catch (error) {
+      if (error.message.includes('未授权') || error.message.includes('401')) {
+        console.log('Token已过期，尝试刷新...')
+        return await this.refreshToken()
+      }
+      return false
+    }
+  },
+
+  // 清除认证数据
+  clearAuthData() {
+    wx.removeStorageSync('token')
+    wx.removeStorageSync('refreshToken')
+    wx.removeStorageSync('userInfo')
+    this.globalData.token = null
+    this.globalData.userInfo = null
+  },
+
   // 网络请求封装
   request(options) {
     return new Promise((resolve, reject) => {
       const token = wx.getStorageSync('token') || this.globalData.token
+
+      // 检查是否需要跳过认证（用于refresh token等接口）
+      const skipAuth = options.skipAuth || false
 
       wx.request({
         url: this.globalData.baseUrl + options.url,
@@ -131,22 +216,37 @@ App({
         data: options.data || {},
         header: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
+          // 如果不是跳过认证且有token，则添加Authorization头
+          ...(skipAuth ? {} : {
+            'Authorization': token ? `Bearer ${token}` : ''
+          }),
           ...options.header
         },
         success: (res) => {
-          if (res.statusCode === 200) {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            // 2xx 状态码都视为成功
             resolve(res.data)
           } else if (res.statusCode === 401) {
-            // 未授权，跳转到登录页
-            wx.removeStorageSync('token')
-            wx.removeStorageSync('userInfo')
-            this.globalData.token = null
-            this.globalData.userInfo = null
-            wx.navigateTo({
-              url: '/pages/auth/auth'
-            })
-            reject(new Error('未授权，请重新登录'))
+            // 只有在需要认证的情况下才处理401错误
+            if (!skipAuth) {
+              // 尝试刷新token
+              this.refreshToken().then(success => {
+                if (success) {
+                  // token刷新成功，重新发起请求
+                  this.request(options).then(resolve).catch(reject)
+                } else {
+                  // token刷新失败，跳转到登录页
+                  this.handleAuthFailure()
+                  reject(new Error('未授权，请重新登录'))
+                }
+              }).catch(() => {
+                // 刷新token过程出错，直接跳转登录
+                this.handleAuthFailure()
+                reject(new Error('未授权，请重新登录'))
+              })
+            } else {
+              reject(new Error(`请求失败: ${res.statusCode}`))
+            }
           } else {
             reject(new Error(`请求失败: ${res.statusCode}`))
           }
@@ -155,6 +255,25 @@ App({
           reject(error)
         }
       })
+    })
+  },
+
+  // 处理认证失败
+  handleAuthFailure() {
+    // 清除本地存储
+    this.clearAuthData()
+
+    // 显示友好的提示
+    wx.showModal({
+      title: '登录已过期',
+      content: '您的登录已过期，请重新登录',
+      showCancel: false,
+      confirmText: '去登录',
+      success: () => {
+        wx.reLaunch({
+          url: '/pages/auth/auth'
+        })
+      }
     })
   },
 
