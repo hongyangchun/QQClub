@@ -25,19 +25,27 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
       },
       {
         "pagePath": "pages/event/list",
-        "text": "读书活动"
+        "text": "读书活动",
+        "iconPath": "images/tab-event.png",
+        "selectedIconPath": "images/tab-event-active.png"
       },
       {
         "pagePath": "pages/post/list",
-        "text": "打卡"
+        "text": "打卡",
+        "iconPath": "images/tab-post.png",
+        "selectedIconPath": "images/tab-post-active.png"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "images/tab-profile.png",
+        "selectedIconPath": "images/tab-profile-active.png"
       }
     ]
   },

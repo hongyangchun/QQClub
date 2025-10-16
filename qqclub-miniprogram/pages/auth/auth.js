@@ -43,8 +43,9 @@ Page({
         avatar_url: 'https://example.com/avatar.jpg'
       })
 
-      if (response.success) {
-        await this.handleLoginSuccess(response.data)
+      // 后端直接返回数据，不需要检查 success 字段
+      if (response.token && response.user) {
+        await this.handleLoginSuccess(response)
       } else {
         app.showToast('登录失败，请重试')
       }
@@ -84,8 +85,9 @@ Page({
       // 调用后端微信登录接口
       const response = await api.auth.wechatLogin(loginRes.code)
 
-      if (response.success) {
-        await this.handleLoginSuccess(response.data)
+      // 后端直接返回数据，不需要检查 success 字段
+      if (response.token && response.user) {
+        await this.handleLoginSuccess(response)
       } else {
         app.showToast('微信登录失败，请重试')
       }
