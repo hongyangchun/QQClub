@@ -44,6 +44,27 @@ rails db:migrate
 rails db:seed
 ```
 
+### 4. 项目目录结构说明
+```bash
+# 统一仓库目录结构
+QQClub/
+├── qqclub_api/              # Rails 8 API后端
+├── qqclub-miniprogram/      # 微信小程序前端
+├── docs/                   # 项目文档
+├── scripts/                # 工具脚本
+└── .claude/commands/       # 自定义命令
+```
+
+### 5. 启动开发环境
+```bash
+# 启动Rails API服务器（在qqclub_api目录中）
+cd qqclub_api
+rails server
+
+# 在另一个终端启动小程序开发者工具（可选）
+# 导入 qqclub-miniprogram 目录
+```
+
 ### 4. 配置环境变量
 创建 `.env` 文件：
 ```bash
