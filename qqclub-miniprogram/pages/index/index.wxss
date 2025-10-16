@@ -1,0 +1,261 @@
+/* pages/index/index.wxss */
+
+/* 用户信息卡片 */
+.user-card {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  margin-bottom: 32rpx;
+}
+
+.user-card .card-body {
+  padding: 32rpx;
+}
+
+.user-card .text-medium {
+  color: white;
+  font-weight: 600;
+}
+
+.user-card .text-small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.user-card .btn-outline {
+  border-color: rgba(255, 255, 255, 0.8);
+  color: white;
+}
+
+.user-card .btn-outline:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 登录提示卡片 */
+.login-prompt {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.login-prompt .text-large {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* 功能网格 */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.feature-item {
+  background: var(--surface);
+  border-radius: 16rpx;
+  padding: 32rpx 24rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.feature-item:active {
+  transform: scale(0.95);
+}
+
+.feature-item:active::before {
+  transform: scaleX(1);
+}
+
+.feature-icon {
+  font-size: 48rpx;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.feature-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8rpx;
+}
+
+.feature-desc {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+/* 区域样式 */
+.section {
+  margin-bottom: 32rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding: 0 8rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-more {
+  font-size: 28rpx;
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* 活动列表 */
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.event-item {
+  border-left: 6rpx solid var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.event-item:active {
+  transform: translateX(4rpx);
+  box-shadow: 0 4rpx 16rpx rgba(124, 179, 66, 0.15);
+}
+
+.event-status {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.event-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.event-book {
+  line-height: 1.3;
+}
+
+.event-info {
+  line-height: 1.3;
+}
+
+/* 动态列表 */
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.post-item {
+  border-left: 6rpx solid var(--secondary-color);
+  transition: all 0.3s ease;
+}
+
+.post-item:active {
+  transform: translateX(4rpx);
+  box-shadow: 0 4rpx 16rpx rgba(139, 195, 74, 0.15);
+}
+
+.post-author {
+  line-height: 1.3;
+}
+
+.post-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.post-content {
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-stats {
+  line-height: 1.3;
+  gap: 24rpx;
+}
+
+/* 响应式优化 */
+@media (max-width: 750rpx) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 16rpx;
+  }
+
+  .feature-item {
+    padding: 24rpx 20rpx;
+  }
+
+  .feature-icon {
+    font-size: 40rpx;
+  }
+
+  .feature-title {
+    font-size: 30rpx;
+  }
+
+  .feature-desc {
+    font-size: 22rpx;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.event-item {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.post-item {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.post-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.post-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.event-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.event-item:nth-child(3) {
+  animation-delay: 0.2s;
+}

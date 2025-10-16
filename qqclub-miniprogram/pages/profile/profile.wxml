@@ -1,0 +1,124 @@
+<!--pages/profile/profile.wxml-->
+<view class="container page-container">
+  <!-- 用户信息卡片 -->
+  <view class="card user-profile-card" wx:if="{{userInfo}}">
+    <view class="card-body">
+      <view class="profile-header">
+        <image class="avatar avatar-large" src="{{userInfo.avatar_url}}" mode="aspectFill" bindtap="changeAvatar"></image>
+        <view class="profile-info">
+          <view class="nickname text-large">{{userInfo.nickname}}</view>
+          <view class="phone text-small text-secondary" wx:if="{{userInfo.phone}}">📱 {{userInfo.phone}}</view>
+          <view class="join-date text-small text-hint">加入时间：{{userInfo.created_at}}</view>
+        </view>
+        <view class="profile-actions">
+          <view class="btn btn-outline btn-small" bindtap="editProfile">编辑资料</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计数据 -->
+  <view class="stats-grid" wx:if="{{userInfo}}">
+    <view class="stat-item" bindtap="goToMyEvents">
+      <view class="stat-number">{{stats.events_count || 0}}</view>
+      <view class="stat-label">参与活动</view>
+    </view>
+    <view class="stat-item" bindtap="goToMyPosts">
+      <view class="stat-number">{{stats.posts_count || 0}}</view>
+      <view class="stat-label">发布动态</view>
+    </view>
+    <view class="stat-item" bindtap="goToMyLikes">
+      <view class="stat-number">{{stats.likes_count || 0}}</view>
+      <view class="stat-label">获赞</view>
+    </view>
+    <view class="stat-item" bindtap="goToMyFlowers">
+      <view class="stat-number">{{stats.flowers_count || 0}}</view>
+      <view class="stat-label">小红花</view>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section">
+    <view class="menu-group">
+      <view class="menu-item" bindtap="goToMyEvents">
+        <view class="menu-icon">📚</view>
+        <view class="menu-content">
+          <view class="menu-title">我的活动</view>
+          <view class="menu-desc">查看参与和创建的活动</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+      <view class="menu-item" bindtap="goToMyPosts">
+        <view class="menu-icon">✍️</view>
+        <view class="menu-content">
+          <view class="menu-title">我的动态</view>
+          <view class="menu-desc">查看发布的打卡动态</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+      <view class="menu-item" bindtap="goToMyLikes">
+        <view class="menu-icon">❤️</view>
+        <view class="menu-content">
+          <view class="menu-title">我的点赞</view>
+          <view class="menu-desc">查看点赞的内容</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+    </view>
+
+    <view class="menu-group">
+      <view class="menu-item" bindtap="goToSettings">
+        <view class="menu-icon">⚙️</view>
+        <view class="menu-content">
+          <view class="menu-title">设置</view>
+          <view class="menu-desc">账号设置、隐私设置等</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+      <view class="menu-item" bindtap="goToHelp">
+        <view class="menu-icon">❓</view>
+        <view class="menu-content">
+          <view class="menu-title">帮助与反馈</view>
+          <view class="menu-desc">使用帮助、问题反馈</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+      <view class="menu-item" bindtap="goToAbout">
+        <view class="menu-icon">ℹ️</view>
+        <view class="menu-content">
+          <view class="menu-title">关于我们</view>
+          <view class="menu-desc">版本信息、联系方式</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+    </view>
+
+    <view class="menu-group">
+      <view class="menu-item logout-item" bindtap="logout">
+        <view class="menu-icon">🚪</view>
+        <view class="menu-content">
+          <view class="menu-title text-error">退出登录</view>
+          <view class="menu-desc text-secondary">退出当前账号</view>
+        </view>
+        <view class="menu-arrow">></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 未登录状态 -->
+  <view class="login-prompt" wx:if="{{!userInfo}}">
+    <view class="card">
+      <view class="card-body text-center">
+        <view class="empty-icon">👤</view>
+        <view class="empty-text">未登录</view>
+        <view class="empty-desc">登录后查看个人信息</view>
+        <button class="btn btn-primary btn-block mt-4" bindtap="goToLogin">立即登录</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text class="text-mini text-hint">QQ读书会 v1.0.0</text>
+  </view>
+</view>

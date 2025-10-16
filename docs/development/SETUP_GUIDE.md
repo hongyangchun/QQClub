@@ -47,12 +47,25 @@ rails db:seed
 ### 4. 项目目录结构说明
 ```bash
 # 统一仓库目录结构
-QQClub/
-├── qqclub_api/              # Rails 8 API后端
-├── qqclub-miniprogram/      # 微信小程序前端
-├── docs/                   # 项目文档
-├── scripts/                # 工具脚本
-└── .claude/commands/       # 自定义命令
+QQClub/                          # 完全统一的项目仓库
+├── qqclub_api/                  # Rails 8 API后端
+│   ├── app/                     # 应用代码
+│   ├── config/                  # 配置文件
+│   ├── db/                      # 数据库文件
+│   └── test/                    # 测试文件
+├── qqclub-miniprogram/          # 微信小程序前端
+│   ├── pages/                   # 页面文件
+│   ├── components/              # 组件文件
+│   ├── services/                # 服务层
+│   ├── utils/                   # 工具函数
+│   └── styles/                  # 样式文件
+├── docs/                        # 项目文档
+│   ├── business/                # 业务文档
+│   ├── technical/               # 技术文档
+│   └── development/             # 开发文档
+├── scripts/                     # 工具脚本和自动化工具
+├── backups/                     # 备份目录
+└── .claude/commands/            # 自定义命令
 ```
 
 ### 5. 启动开发环境
