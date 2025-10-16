@@ -64,7 +64,6 @@ QQClub/                          # 完全统一的项目仓库
 │   ├── technical/               # 技术文档
 │   └── development/             # 开发文档
 ├── scripts/                     # 工具脚本和自动化工具
-├── backups/                     # 备份目录
 └── .claude/commands/            # 自定义命令
 ```
 

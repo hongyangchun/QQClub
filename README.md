@@ -83,7 +83,6 @@ QQClub/                          # 统一项目仓库
 │   ├── technical/               # 技术文档
 │   └── development/             # 开发文档
 ├── scripts/                     # 工具脚本
-├── backups/                     # 备份目录
 └── .claude/commands/            # 自定义命令
 ```
 
