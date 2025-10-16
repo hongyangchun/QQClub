@@ -315,4 +315,4 @@ class API {
 }
 
 // 导出API实例
-export default new API()
+module.exports = new API()
