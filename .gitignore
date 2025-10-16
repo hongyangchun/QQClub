@@ -1,7 +1,4 @@
-# API后端目录 (独立Git仓库)
-qqclub_api/
-
-# 小程序前端目录 (可能独立Git仓库)
+# 小程序前端目录 (独立Git仓库)
 qqclub-miniprogram/
 
 # 临时文件
