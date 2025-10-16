@@ -1,0 +1,21 @@
+# API后端目录 (独立Git仓库)
+qqclub_api/
+
+# 小程序前端目录 (可能独立Git仓库)
+qqclub-miniprogram/
+
+# 临时文件
+*.tmp
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Rails临时文件
+*.sqlite3
+tmp/
+log/
+
+# 备份文件
+*.bak
+*.backup

@@ -6,10 +6,11 @@
 
 ### 1. 读取项目计划和进度
 首先，读取以下文件以了解项目状态：
-- `RAILS_MASTER_PLAN.md` - 总体开发计划
 - `RAILS_PROGRESS_LOG.md` - 当前进度日志
+- `README.md` - 项目总体说明和开发进度
 - `docs/business/BUSINESS_ANALYSIS.md` - 业务需求分析
 - `docs/technical/ARCHITECTURE.md` - 系统架构设计
+- `docs/technical/TECHNICAL_DESIGN.md` - 技术实现细节
 
 ### 2. 分析当前状态
 根据 `RAILS_PROGRESS_LOG.md`：
@@ -32,7 +33,7 @@
 
 ### 5. 执行下一个任务
 - 使用 TodoWrite 工具创建任务清单
-- 按照 RAILS_MASTER_PLAN.md 中的步骤执行
+- 按照 README.md 中的开发计划执行
 - 遵循 Rails 最佳实践
 - 实时更新 Todo 状态
 

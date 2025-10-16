@@ -17,7 +17,7 @@
 面向技术负责人、架构师和开发工程师
 - [系统架构设计](technical/ARCHITECTURE.md) - 技术栈、架构图、设计决策
 - [API接口文档](technical/API_REFERENCE.md) - 完整的API规范和示例
-- [API测试指南](technical/API_TESTING_GUIDE.md) - 实际的API测试用例和操作指南
+- [测试指南](technical/TESTING_GUIDE.md) - 完整的测试框架和API测试用例
 - [数据库设计](technical/DATABASE_DESIGN.md) - 数据模型、表结构、关系图
 - [安全设计](technical/SECURITY_DESIGN.md) - 认证、授权、安全机制
 
@@ -77,5 +77,5 @@
 
 ---
 
-**最后更新**: 2025-10-15
+**最后更新**: 2025-10-16
 **维护者**: QQClub 开发团队

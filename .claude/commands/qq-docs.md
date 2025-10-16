@@ -22,7 +22,8 @@
 - 更新进度日志（RAILS_PROGRESS_LOG.md）
 - 更新技术架构（docs/technical/ARCHITECTURE.md）
 - 更新API文档（docs/technical/API_REFERENCE.md）
-- 更新测试指南（docs/technical/API_TESTING_GUIDE.md）
+- 更新技术实现（docs/technical/TECHNICAL_DESIGN.md）
+- 更新测试指南（docs/technical/TESTING_GUIDE.md）
 
 ### 4. 验证文档一致性
 确保所有文档内容一致：

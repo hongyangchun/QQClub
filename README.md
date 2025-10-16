@@ -23,11 +23,14 @@ QQClub 是一个现代化的读书社区平台，支持：
 
 ### 前端技术栈
 - **微信小程序** - 原生小程序开发
-- **Vant Weapp** - UI 组件库
-- **MobX** - 状态管理（可选）
+- **组件化架构** - 模块化UI组件设计
+- **服务层模式** - API调用和业务逻辑分离
+- **统一设计系统** - CSS变量和样式规范
+- **工具函数库** - 通用功能和业务逻辑封装
 
 ### 部署架构
 - **Kamal 2** - Rails 8 零停机部署
+- **QQClub Deploy** - 自定义自动化部署系统
 - **Docker** - 容器化部署
 - **Let's Encrypt** - SSL 证书
 
@@ -68,15 +71,16 @@ rails server
 - [MVP范围](docs/business/MVP_SCOPE.md) - 最小可行产品功能规划
 
 ### 🔧 技术文档
-- [系统架构设计](docs/technical/ARCHITECTURE.md) - 技术栈、架构图、设计决策
-- [API接口文档](docs/technical/API_REFERENCE.md) - 完整的API规范和示例
+- [系统架构概览](docs/technical/ARCHITECTURE.md) - 技术栈、架构图、设计决策
+- [API接口文档](docs/technical/API_REFERENCE.md) - 完整的API规格和接口说明
+- [技术实现细节](docs/technical/TECHNICAL_DESIGN.md) - 深度技术实现和设计决策
 - [数据库设计](docs/technical/DATABASE_DESIGN.md) - 数据模型、表结构
 - [安全设计](docs/technical/SECURITY_DESIGN.md) - 认证、授权、安全机制
 
 ### 👨‍💻 开发文档
 - [环境搭建指南](docs/development/SETUP_GUIDE.md) - 本地开发环境配置
 - [代码规范](docs/development/CODING_STANDARDS.md) - 编码风格和最佳实践
-- [测试指南](docs/development/TESTING_GUIDE.md) - 单元测试、集成测试规范
+- [测试指南](docs/technical/TESTING_GUIDE.md) - 完整的测试框架和使用指南
 - [部署指南](docs/development/DEPLOYMENT.md) - 测试和生产环境部署
 
 完整文档导航请访问：[📚 文档中心](docs/README.md)
@@ -139,25 +143,75 @@ QQClub 采用 3 层权限架构：
 
 完整 API 文档请参考：[API接口文档](docs/technical/API_REFERENCE.md)
 
+## 🧪 测试框架
+
+QQClub 拥有完整的测试框架，支持多种测试类型：
+
+### 统一测试入口
+```bash
+# 核心测试类型 - 日常使用
+./scripts/qq-test.sh models            # 模型测试 (核心业务逻辑)
+./scripts/qq-test.sh api               # API功能测试 (端到端验证)
+./scripts/qq-test.sh permissions       # 权限系统测试 (安全验证)
+./scripts/qq-test.sh all               # 运行所有测试
+
+# 详细测试 - 开发者调试
+./scripts/qq-test.sh controllers       # 控制器测试 (详细测试)
+
+# 高级选项
+./scripts/qq-test.sh models --verbose   # 详细模型测试
+./scripts/qq-test.sh all --coverage      # 完整测试+覆盖率
+./scripts/qq-test.sh --help             # 查看帮助信息
+```
+
+### 测试工具生态
+- **qq-test.sh**: 统一测试入口，支持参数化控制
+- **qq-test-rails.sh**: 专门用于Rails测试的简化脚本
+- **qq-permissions.sh**: 权限系统检查工具
+- **api_test_framework.rb**: API端点测试框架
+- **test_data_manager.rb**: 测试数据管理工具
+- **test_debugger.rb**: 测试环境诊断工具
+
+### 测试覆盖范围
+- **models**: 模型测试 - 验证数据验证、关联关系、业务逻辑
+- **api**: API功能测试 - 端到端功能验证和完整业务流程
+- **permissions**: 权限系统测试 - 3层权限架构和安全验证
+- **controllers**: 控制器测试 - 详细的API端点和权限控制测试
+- **all**: 完整测试 - 运行所有核心测试类型
+
+详细测试指南请参考：[测试指南](docs/technical/TESTING_GUIDE.md)
+
 ## 📊 项目状态
 
 ### 开发进度
-- ✅ **后端API**: 核心功能完成
-- ✅ **用户认证**: 微信登录集成
-- ✅ **权限系统**: 3层权限架构
-- ✅ **业务逻辑**: 6大核心模块
-- 🚧 **小程序前端**: 开发中
-- 📋 **支付集成**: 规划中
+- ✅ **后端API**: 核心功能完成，测试覆盖充分
+- ✅ **用户认证**: 微信登录集成，JWT认证系统
+- ✅ **权限系统**: 3层权限架构，时间窗口权限
+- ✅ **业务逻辑**: 6大核心模块，Service Objects重构
+- ✅ **小程序前端**: 完整实现，4个主要页面模块
+- ✅ **前后端对接**: API接口验证，统一数据格式
+- ✅ **测试框架**: 完整的自动化测试体系
+- ✅ **部署系统**: 自动化部署和文档更新
+- 📋 **支付集成**: 规划中（微信支付）
 
 ### 测试覆盖率
-- 单元测试: 85%+
-- 集成测试: 70%+
-- API测试: 90%+
+- **模型测试**: 106个测试用例，89.6%通过率
+- **控制器测试**: 56个测试用例，权限和路由测试
+- **集成测试**: 完整的业务流程测试
+- **API测试**: 端到端API功能验证
+- **权限测试**: 3层权限架构全面测试
 
 ### 部署状态
-- 开发环境: ✅ 运行中
+- 开发环境: ✅ 运行中（后端 + 小程序前端）
 - 测试环境: 🚧 配置中
 - 生产环境: 📋 规划中
+
+### 技术栈完整性
+- **后端**: Ruby on Rails 8 + PostgreSQL + Redis + JWT
+- **前端**: 微信小程序原生开发 + 组件化架构
+- **测试**: RSpec + Minitest + 自动化测试工具链
+- **部署**: 自动化部署脚本 + 容器化配置
+- **文档**: 完整的技术文档体系和API参考
 
 ## 🤝 贡献指南
 
@@ -173,8 +227,24 @@ QQClub 采用 3 层权限架构：
 1. 阅读 [开发指南](docs/development/SETUP_GUIDE.md)
 2. Fork 项目并创建功能分支
 3. 编写代码和测试
-4. 确保所有测试通过
-5. 提交 Pull Request
+4. 使用 `./scripts/qq-deploy.sh --feature="功能名称"` 提交代码
+5. 确保所有测试通过
+6. 提交 Pull Request
+
+### 快速部署
+```bash
+# 日常开发部署
+./scripts/qq-deploy.sh --feature="新功能"
+
+# 版本发布
+./scripts/qq-deploy.sh --release --version="v1.0.0"
+
+# 紧急修复
+./scripts/qq-deploy.sh --hotfix --message="修复问题"
+
+# 预览部署
+./scripts/qq-deploy.sh --dry-run
+```
 
 ## 📄 许可证
 
@@ -195,4 +265,4 @@ QQClub 采用 3 层权限架构：
 
 **QQClub** - 让阅读更有温度，让社区更有力量 🌸
 
-*最后更新: 2025-10-15*
+*最后更新: 2025-10-16*

@@ -16,6 +16,7 @@
 - **Postico** 或 **pgAdmin** - 数据库管理工具
 - **Postman** - API 测试工具
 - **Docker** - 容器化部署
+- **Git** - 版本控制（必需）
 
 ## 🚀 快速开始
 
@@ -201,6 +202,10 @@ rails lint
 
 ### 3. 提交代码
 ```bash
+# 方法一：使用 qq-deploy 自动化部署（推荐）
+./scripts/qq-deploy.sh --feature="新功能名称"
+
+# 方法二：手动提交
 git add .
 git commit -m "feat: 添加新功能描述"
 
@@ -255,12 +260,135 @@ rails console
 > User.create!(wx_openid: 'test_openid', nickname: '测试用户')
 ```
 
+## 🚀 QQClub 部署系统
+
+项目内置了完整的自动化部署系统 `qq-deploy`，让代码提交和部署变得简单、标准化。
+
+### 快速使用
+
+#### 标准部署
+```bash
+# 完整的部署流程，包含测试和文档更新
+./scripts/qq-deploy.sh
+```
+
+#### 功能发布
+```bash
+# 标记特定功能的发布
+./scripts/qq-deploy.sh --feature="论坛系统"
+```
+
+#### 版本发布
+```bash
+# 生产环境版本发布
+./scripts/qq-deploy.sh --release --version="v1.2.0"
+```
+
+#### 紧急修复
+```bash
+# 快速修复线上问题
+./scripts/qq-deploy.sh --hotfix --message="修复权限越界问题"
+```
+
+#### 预览模式
+```bash
+# 查看将要执行的操作，不实际执行
+./scripts/qq-deploy.sh --dry-run --debug
+```
+
+### 配置部署系统
+
+#### 创建配置文件
+首次使用时会自动创建 `.qq-deploy.yml` 配置文件：
+
+```yaml
+# 基础配置
+auto_commit: true          # 自动提交代码
+auto_push: true           # 自动推送到远程仓库
+run_tests: true           # 运行测试套件
+update_docs: true         # 更新项目文档
+
+# 环境特定配置
+environments:
+  development:
+    auto_push: true
+    run_tests: true
+    create_backup: false
+
+  production:
+    auto_push: true
+    create_backup: true
+    require_tag: true
+
+# 分支保护
+branch_protection:
+  protected_branches: [main, master]
+  require_confirmation: true
+```
+
+### 部署流程说明
+
+qq-deploy 会按以下顺序执行：
+
+1. **环境检查** - 验证 Git 状态和分支
+2. **项目评估** - 分析变更内容和类型
+3. **文档更新** - 自动运行 `/qq-docs` 命令
+4. **测试执行** - 自动运行 `/qq-test` 命令
+5. **Git 操作** - 智能生成 Commit 消息并推送
+6. **生成报告** - 输出详细的部署报告
+
+### 智能 Commit 消息
+
+系统会根据变更内容自动生成有意义的 Commit 消息：
+
+```
+[auto] 2025-10-15 - 新增权限系统和论坛功能
+
+变更统计：
+- 修改: 5 个文件
+- 新增: 3 个文件
+- 删除: 2 个文件
+
+主要变更：
+  - app/models/user.rb
+  - app/controllers/admin_controller.rb
+  - app/controllers/posts_controller.rb
+```
+
+### 安全特性
+
+- **分支保护** - 主分支操作需要确认
+- **权限验证** - 检查推送权限
+- **回滚机制** - 保存回滚点，支持快速恢复
+- **备份策略** - 重要操作前自动备份
+
+### 常用命令选项
+
+| 选项 | 说明 | 示例 |
+|------|------|------|
+| `--dry-run` | 模拟执行，不实际操作 | `./scripts/qq-deploy.sh --dry-run` |
+| `--force` | 强制执行，跳过某些检查 | `./scripts/qq-deploy.sh --force` |
+| `--skip-tests` | 跳过测试执行 | `./scripts/qq-deploy.sh --skip-tests` |
+| `--skip-docs` | 跳过文档更新 | `./scripts/qq-deploy.sh --skip-docs` |
+| `--message` | 自定义 Commit 消息 | `./scripts/qq-deploy.sh --message="修复登录问题"` |
+| `--debug` | 显示详细调试信息 | `./scripts/qq-deploy.sh --debug` |
+| `--help` | 显示帮助信息 | `./scripts/qq-deploy.sh --help` |
+
+### 最佳实践
+
+1. **日常开发** - 使用 `./scripts/qq-deploy.sh --feature="功能名称"`
+2. **版本发布** - 使用 `./scripts/qq-deploy.sh --release --version="版本号"`
+3. **紧急修复** - 使用 `./scripts/qq-deploy.sh --hotfix`
+4. **测试验证** - 使用 `./scripts/qq-deploy.sh --dry-run` 预览操作
+
 ## 📚 相关文档
 
-- [系统架构设计](../technical/ARCHITECTURE.md)
-- [API 接口文档](../technical/API_REFERENCE.md)
+- [系统架构概览](../technical/ARCHITECTURE.md) - 高层架构设计，快速了解系统架构
+- [API 接口文档](../technical/API_REFERENCE.md) - 完整的API规格和接口说明
+- [技术实现细节](../technical/TECHNICAL_DESIGN.md) - 深度技术实现和设计决策
+- [权限系统指南](../technical/PERMISSIONS_GUIDE.md) - 权限系统使用指南
+- [测试框架指南](../technical/TESTING_GUIDE.md) - 测试框架和规范
 - [代码规范](CODING_STANDARDS.md)
-- [测试指南](TESTING_GUIDE.md)
 - [部署指南](DEPLOYMENT.md)
 
 ## 🆘 获取帮助
