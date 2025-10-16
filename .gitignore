@@ -12,4 +12,5 @@ log/
 
 # 备份文件
 *.bak
-*.backup
+*.backup*.dmg
+*.fdmdownload
