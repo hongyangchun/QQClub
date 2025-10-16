@@ -48,6 +48,7 @@ DEFAULT_CONFIG="
 # QQClub Deploy 配置文件
 auto_commit: true
 auto_push: true
+auto_github: false
 auto_tag: false
 run_tests: true
 test_timeout: 300
@@ -67,6 +68,7 @@ DRY_RUN=false
 FORCE=false
 SKIP_TESTS=false
 SKIP_DOCS=false
+AUTO_GITHUB=false
 CUSTOM_MESSAGE=""
 FEATURE_NAME=""
 IS_RELEASE=false
@@ -85,6 +87,8 @@ QQClub Deploy - 项目部署和发布工具
   --force                强制提交，跳过某些检查
   --skip-tests           跳过测试执行
   --skip-docs            跳过文档更新
+  --auto-github          自动创建和配置GitHub仓库
+  --check-github         检查GitHub集成状态
   --message <text>       自定义 commit 消息
   --feature <name>       标记功能名称
   --release              标记为发布版本
@@ -96,11 +100,61 @@ QQClub Deploy - 项目部署和发布工具
 示例:
   $0                     # 标准部署
   $0 --dry-run          # 模拟执行
+  $0 --auto-github      # 自动配置GitHub仓库并推送
+  $0 --check-github     # 检查GitHub集成状态
   $0 --feature="论坛系统" # 功能发布
   $0 --release --version="v1.2.0" # 版本发布
   $0 --hotfix --message="修复权限越界问题" # 紧急修复
 
 EOF
+}
+
+# 显示GitHub设置状态
+show_github_status() {
+    log_step "检查GitHub集成状态..."
+
+    echo
+    log_info "🔍 GitHub CLI 检查:"
+    if command -v gh &> /dev/null; then
+        log_success "  ✅ GitHub CLI 已安装"
+        if gh auth status &> /dev/null; then
+            local github_user=$(gh api user --jq '.login' 2>/dev/null || echo "未知")
+            log_success "  ✅ GitHub CLI 已认证 (用户: $github_user)"
+        else
+            log_warning "  ⚠️  GitHub CLI 未认证 - 请运行: gh auth login"
+        fi
+    else
+        log_warning "  ❌ GitHub CLI 未安装 - 请访问: https://cli.github.com/manual/installation"
+    fi
+
+    echo
+    log_info "🔍 Git 远程仓库检查:"
+    if git remote get-url origin > /dev/null 2>&1; then
+        local remote_url=$(git remote get-url origin)
+        log_success "  ✅ 远程仓库已配置: $remote_url"
+
+        if [[ "$remote_url" == *"github.com"* ]]; then
+            log_success "  ✅ GitHub 仓库连接正常"
+        else
+            log_warning "  ⚠️  非 GitHub 仓库"
+        fi
+    else
+        log_warning "  ❌ 未配置远程仓库"
+        log_info "    💡 提示: 使用 --auto-github 参数自动创建 GitHub 仓库"
+    fi
+
+    echo
+    log_info "🔍 推送权限检查:"
+    if git remote get-url origin > /dev/null 2>&1; then
+        local current_branch=$(git branch --show-current)
+        if git ls-remote --exit-code origin "$current_branch" &> /dev/null; then
+            log_success "  ✅ 有推送权限"
+        else
+            log_warning "  ⚠️  推送权限未知，首次推送时需要认证"
+        fi
+    else
+        log_warning "  ❌ 无法检查推送权限"
+    fi
 }
 
 # 解析命令行参数
@@ -122,6 +176,14 @@ parse_arguments() {
             --skip-docs)
                 SKIP_DOCS=true
                 shift
+                ;;
+            --auto-github)
+                AUTO_GITHUB=true
+                shift
+                ;;
+            --check-github)
+                show_github_status
+                exit 0
                 ;;
             --message)
                 CUSTOM_MESSAGE="$2"
@@ -202,6 +264,79 @@ check_git_status() {
     fi
 }
 
+# 检查和配置GitHub仓库
+setup_github_repository() {
+    log_step "检查GitHub仓库配置..."
+
+    # 检查GitHub CLI安装和认证
+    if ! command -v gh &> /dev/null; then
+        log_error "GitHub CLI未安装，请先安装: https://cli.github.com/manual/installation"
+        exit 1
+    fi
+
+    if ! gh auth status &> /dev/null; then
+        log_error "GitHub CLI未认证，请先运行: gh auth login"
+        exit 1
+    fi
+
+    log_success "GitHub CLI: 已认证 (用户: $(gh api user --jq '.login')"
+
+    # 检查是否已有远程仓库
+    if git remote get-url origin > /dev/null 2>&1; then
+        local remote_url=$(git remote get-url origin)
+        log_info "已有远程仓库: $remote_url"
+
+        # 检查是否是GitHub仓库
+        if [[ "$remote_url" == *"github.com"* ]]; then
+            log_success "GitHub仓库配置正常"
+        else
+            log_warning "远程仓库不是GitHub，可以继续使用现有配置"
+        fi
+        return 0
+    fi
+
+    # 尝试自动创建GitHub仓库
+    log_info "未检测到远程仓库，尝试创建GitHub仓库..."
+
+    local repo_name="QQClub"
+    local repo_description="QQClub 读书社群 - 基于Rails 8的现代化读书社群平台"
+    local visibility="public"
+
+    # 检查用户是否有权限创建仓库
+    log_info "检查GitHub权限..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] 将创建GitHub仓库: $repo_name"
+        log_info "  私有仓库: $visibility"
+        log_info "  描述: $repo_description"
+        return 0
+    fi
+
+    # 尝试创建GitHub仓库
+    log_info "创建GitHub仓库..."
+    if gh repo create "$repo_name" \
+        --description "$repo_description" \
+        --"$visibility" \
+        --source=local; then
+        log_success "GitHub仓库创建成功: $repo_name"
+
+        # 添加远程仓库
+        git remote add origin "git@github.com:$(gh api user --jq '.login')/$repo_name.git"
+        log_success "已添加远程仓库origin"
+
+        # 推送到远程仓库
+        log_info "推送初始代码到GitHub..."
+        git push -u origin main
+        log_success "初始代码已推送到GitHub"
+    else
+        log_error "GitHub仓库创建失败"
+        log_info "请手动创建GitHub仓库，然后配置远程仓库"
+        log_info "使用命令: git remote add origin <your-repo-url>"
+        log_info "然后使用命令: git push -u origin main"
+        return 1
+    fi
+}
+
 # 检查当前分支
 check_current_branch() {
     log_step "检查当前分支..."
@@ -227,6 +362,11 @@ check_current_branch() {
         log_info "远程仓库: $(git remote get-url origin)"
     else
         log_warning "没有配置远程仓库"
+        if [[ "$AUTO_GITHUB" == "true" ]]; then
+            log_info "自动GitHub模式已启用，将创建GitHub仓库"
+        else
+            log_info "可以使用 --auto-github 参数自动创建GitHub仓库"
+        fi
     fi
 }
 
@@ -416,10 +556,54 @@ execute_git_operations() {
     local current_branch=$(git branch --show-current)
     if git remote get-url origin > /dev/null 2>&1; then
         log_info "推送到远程仓库..."
-        git push origin "$current_branch"
-        log_success "代码已推送到远程仓库"
+
+        # 检查是否是GitHub仓库
+        local remote_url=$(git remote get-url origin)
+        if [[ "$remote_url" == *"github.com"* ]]; then
+            log_info "检测到GitHub仓库，使用增强推送..."
+
+            # GitHub推送 - 带重试机制
+            local push_retry=0
+            local max_retries=3
+            while [[ $push_retry -lt $max_retries ]]; do
+                if git push origin "$current_branch"; then
+                    log_success "代码已成功推送到GitHub"
+                    break
+                else
+                    push_retry=$((push_retry + 1))
+                    if [[ $push_retry -lt $max_retries ]]; then
+                        log_warning "推送失败，尝试重新认证... ($push_retry/$max_retries)"
+
+                        # 尝试刷新GitHub认证
+                        if command -v gh &> /dev/null; then
+                            gh auth refresh
+                        fi
+
+                        sleep 2
+                    else
+                        log_error "推送失败，已达到最大重试次数"
+                        log_error "请检查网络连接和GitHub权限设置"
+                        return 1
+                    fi
+                fi
+            done
+        else
+            # 普通Git推送
+            if git push origin "$current_branch"; then
+                log_success "代码已推送到远程仓库"
+            else
+                log_error "推送失败"
+                return 1
+            fi
+        fi
     else
-        log_warning "没有配置远程仓库，跳过推送"
+        if [[ "$AUTO_GITHUB" == "true" ]]; then
+            log_error "自动GitHub模式启用但推送失败，请检查网络连接"
+            return 1
+        else
+            log_warning "没有配置远程仓库，跳过推送"
+            log_info "提示: 使用 --auto-github 参数自动创建GitHub仓库"
+        fi
     fi
 }
 
@@ -439,6 +623,17 @@ generate_deployment_report() {
         lines_deleted=$(git diff --stat HEAD~1 HEAD | tail -1 | grep -o '[0-9]\+' | tail -1 || echo "0")
     fi
 
+    # GitHub信息
+    local github_info=""
+    if git remote get-url origin > /dev/null 2>&1; then
+        local remote_url=$(git remote get-url origin)
+        if [[ "$remote_url" == *"github.com"* ]]; then
+            github_info="
+🌐 GitHub仓库: $remote_url
+📡 推送状态: 成功"
+        fi
+    fi
+
     cat << EOF
 
 🎉 QQClub 部署完成报告
@@ -446,7 +641,7 @@ generate_deployment_report() {
 
 📅 部署时间: $date_str
 🌿 分支: $current_branch
-🔗 Commit: $commit_hash
+🔗 Commit: $commit_hash$github_info
 
 📊 变更统计:
   - 代码行数: +$lines_added/-$lines_deleted
@@ -465,9 +660,25 @@ EOF
         echo "  - 常规部署"
     fi
 
+    # GitHub集成状态
+    if [[ "$AUTO_GITHUB" == "true" ]]; then
+        echo ""
+        echo "🔗 GitHub集成: 自动创建并配置成功"
+    fi
+
     echo
     echo "✅ 部署状态: 成功"
     echo "🚀 项目已成功部署！"
+
+    # 如果推送到GitHub，提供便捷链接
+    if git remote get-url origin > /dev/null 2>&1; then
+        local remote_url=$(git remote get-url origin)
+        if [[ "$remote_url" == *"github.com"* ]]; then
+            echo ""
+            echo "🔗 GitHub仓库: $remote_url"
+            echo "📋 查看提交: ${remote_url%.git}/commit/$commit_hash"
+        fi
+    fi
 }
 
 # 主函数
@@ -497,6 +708,12 @@ main() {
     fi
 
     check_current_branch
+
+    # 如果启用自动GitHub模式，设置GitHub仓库
+    if [[ "$AUTO_GITHUB" == "true" ]]; then
+        setup_github_repository
+    fi
+
     assess_project_status
     run_docs_update
     run_tests
