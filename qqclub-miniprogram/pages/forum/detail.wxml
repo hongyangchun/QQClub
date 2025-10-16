@@ -1,0 +1,272 @@
+<!--pages/forum/detail.wxml-->
+<view class="container page-container">
+  <!-- 帖子头部 -->
+  <view class="post-header" wx:if="{{postInfo}}">
+    <view class="header-nav">
+      <view class="nav-btn" bindtap="goBack">
+        <text class="nav-icon">‹</text>
+      </view>
+      <view class="nav-title">帖子详情</view>
+      <view class="nav-btn" bindtap="showMoreActions">
+        <text class="nav-icon">⋯</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 帖子内容 -->
+  <view class="post-content" wx:if="{{postInfo}}">
+    <!-- 帖子信息 -->
+    <view class="post-info-card">
+      <view class="post-category-badge">
+        <text class="category-icon">{{postInfo.category_icon}}</text>
+        <text class="category-name">{{postInfo.category_name}}</text>
+      </view>
+
+      <view class="post-title">{{postInfo.title}}</view>
+
+      <view class="post-meta">
+        <view class="author-info">
+          <image class="author-avatar" src="{{postInfo.author.avatar_url}}" mode="aspectFill"></image>
+          <view class="author-details">
+            <view class="author-name">
+              <text>{{postInfo.author.nickname}}</text>
+              <text class="author-badge" wx:if="{{postInfo.author.badge}}">{{postInfo.author.badge}}</text>
+            </view>
+            <view class="post-time">{{postInfo.created_at}}</view>
+          </view>
+        </view>
+
+        <view class="post-stats">
+          <view class="stat-item">
+            <text class="stat-icon">👁️</text>
+            <text class="stat-text">{{postInfo.views_count}}</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-icon">💬</text>
+            <text class="stat-text">{{postInfo.comments_count}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 帖子标签 -->
+      <view class="post-tags" wx:if="{{postInfo.tags && postInfo.tags.length > 0}}">
+        <view class="tag-item" wx:for="{{postInfo.tags}}" wx:key="index">
+          <text class="tag-text">#{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 帖子正文 -->
+    <view class="post-body">
+      <text class="post-text">{{postInfo.content}}</text>
+
+      <!-- 帖子图片 -->
+      <view class="post-images" wx:if="{{postInfo.images && postInfo.images.length > 0}}">
+        <view class="image-grid grid-{{postInfo.images.length}}">
+          <image class="post-image" wx:for="{{postInfo.images}}" wx:for-item="image" wx:key="index"
+                 src="{{image}}" mode="aspectFill"
+                 bindtap="previewImage"
+                 data-urls="{{postInfo.images}}"
+                 data-current="{{image}}">
+          </image>
+        </view>
+      </view>
+    </view>
+
+    <!-- 帖子操作栏 -->
+    <view class="post-actions">
+      <view class="action-item {{postInfo.is_liked ? 'liked' : ''}}" bindtap="likePost">
+        <text class="action-icon">{{postInfo.is_liked ? '❤️' : '🤍'}}</text>
+        <text class="action-text">{{postInfo.likes_count}}</text>
+      </view>
+
+      <view class="action-item" bindtap="focusCommentInput">
+        <text class="action-icon">💬</text>
+        <text class="action-text">评论</text>
+      </view>
+
+      <view class="action-item" bindtap="collectPost" wx:if="{{!postInfo.is_collected}}">
+        <text class="action-icon">⭐</text>
+        <text class="action-text">收藏</text>
+      </view>
+
+      <view class="action-item collected" bindtap="uncollectPost" wx:if="{{postInfo.is_collected}}">
+        <text class="action-icon">⭐</text>
+        <text class="action-text">已收藏</text>
+      </view>
+
+      <view class="action-item" bindtap="sharePost">
+        <text class="action-icon">📤</text>
+        <text class="action-text">分享</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评论区 -->
+  <view class="comments-section" wx:if="{{postInfo}}">
+    <view class="comments-header">
+      <text class="comments-title">评论 ({{comments.length}})</text>
+      <view class="sort-options">
+        <text class="sort-text {{commentSort === 'newest' ? 'active' : ''}}" bindtap="sortComments" data-sort="newest">最新</text>
+        <text class="sort-divider">·</text>
+        <text class="sort-text {{commentSort === 'hottest' ? 'active' : ''}}" bindtap="sortComments" data-sort="hottest">最热</text>
+      </view>
+    </view>
+
+    <!-- 评论列表 -->
+    <view class="comments-list" wx:if="{{comments.length > 0}}">
+      <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+        <image class="comment-avatar" src="{{item.author.avatar_url}}" mode="aspectFill"></image>
+
+        <view class="comment-content">
+          <view class="comment-header">
+            <view class="comment-author">
+              <text class="author-name">{{item.author.nickname}}</text>
+              <text class="author-badge" wx:if="{{item.author.badge}}">{{item.author.badge}}</text>
+              <text class="floor-number">#{{item.floor}}</text>
+            </view>
+            <text class="comment-time">{{item.created_at}}</text>
+          </view>
+
+          <text class="comment-text">{{item.content}}</text>
+
+          <!-- 评论图片 -->
+          <view class="comment-images" wx:if="{{item.images && item.images.length > 0}}">
+            <image class="comment-image" wx:for="{{item.images}}" wx:for-item="image" wx:key="index"
+                   src="{{image}}" mode="aspectFill"
+                   bindtap="previewImage"
+                   data-urls="{{item.images}}"
+                   data-current="{{image}}">
+            </image>
+          </view>
+
+          <!-- 回复列表 -->
+          <view class="replies-section" wx:if="{{item.replies && item.replies.length > 0}}">
+            <view class="reply-item" wx:for="{{item.replies}}" wx:for-item="reply" wx:key="id">
+              <text class="reply-author">{{reply.author.nickname}}</text>
+              <text class="reply-text">回复</text>
+              <text class="reply-target">@{{reply.target_name}}</text>
+              <text class="reply-content">: {{reply.content}}</text>
+            </view>
+
+            <view class="view-more-replies" wx:if="{{item.replies_count > item.replies.length}}" bindtap="loadMoreReplies" data-comment-id="{{item.id}}">
+              <text class="more-text">查看更多{{item.replies_count - item.replies.length}}条回复</text>
+            </view>
+          </view>
+
+          <!-- 评论操作 -->
+          <view class="comment-actions">
+            <view class="comment-action {{item.is_liked ? 'liked' : ''}}" bindtap="likeComment" data-id="{{item.id}}">
+              <text class="action-icon">{{item.is_liked ? '❤️' : '🤍'}}</text>
+              <text class="action-count">{{item.likes_count}}</text>
+            </view>
+
+            <view class="comment-action" bindtap="replyToComment" data-comment="{{item}}">
+              <text class="action-icon">💬</text>
+              <text class="action-text">回复</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空评论状态 -->
+    <view class="empty-comments" wx:if="{{comments.length === 0}}">
+      <text class="empty-emoji">💬</text>
+      <text class="empty-text">暂无评论</text>
+      <text class="empty-desc">来发表第一个评论吧！</text>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{hasMoreComments}}" bindtap="loadMoreComments">
+      <text class="load-text">{{loadingComments ? '加载中...' : '加载更多评论'}}</text>
+    </view>
+  </view>
+
+  <!-- 评论输入框 -->
+  <view class="comment-input-container {{showCommentInput ? 'show' : ''}}" wx:if="{{postInfo}}">
+    <view class="comment-input-wrapper">
+      <input class="comment-input"
+             placeholder="{{replyingTo ? '回复 @' + replyingTo.author.nickname : '发表评论...'}}"
+             value="{{commentText}}"
+             bindinput="onCommentInput"
+             bindfocus="onCommentFocus"
+             bindblur="onCommentBlur"
+             confirm-type="send"
+             bindconfirm="submitComment">
+      </input>
+
+      <view class="input-actions">
+        <view class="action-btn" bindtap="chooseImage" wx:if="{{!commentImages.length}}">
+          <text class="btn-icon">📷</text>
+        </view>
+
+        <view class="action-btn image-preview" bindtap="previewImage" data-urls="{{commentImages}}" data-current="{{commentImages[0]}}" wx:if="{{commentImages.length}}">
+          <text class="btn-icon">📷</text>
+        </view>
+
+        <view class="action-btn send-btn {{commentText.trim() || commentImages.length ? 'active' : ''}}" bindtap="submitComment">
+          <text class="btn-icon">📤</text>
+        </view>
+      </view>
+
+      <!-- 评论图片预览 -->
+      <view class="comment-image-preview" wx:if="{{commentImages.length > 0}}">
+        <view class="preview-item" wx:for="{{commentImages}}" wx:key="index">
+          <image class="preview-image" src="{{item}}" mode="aspectFill"></image>
+          <view class="remove-image" bindtap="removeCommentImage" data-index="{{index}}">
+            <text class="remove-icon">×</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 更多操作弹窗 -->
+  <view class="action-modal {{showActionModal ? 'show' : ''}}" bindtap="hideActionModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">更多操作</text>
+        <view class="modal-close" bindtap="hideActionModal">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+
+      <view class="action-list">
+        <view class="modal-action-item" bindtap="reportPost" wx:if="{{!isAuthor}}">
+          <text class="action-icon">🚫</text>
+          <text class="action-text">举报帖子</text>
+        </view>
+
+        <view class="modal-action-item" bindtap="editPost" wx:if="{{isAuthor}}">
+          <text class="action-icon">✏️</text>
+          <text class="action-text">编辑帖子</text>
+        </view>
+
+        <view class="modal-action-item" bindtap="deletePost" wx:if="{{isAuthor}}">
+          <text class="action-icon">🗑️</text>
+          <text class="action-text">删除帖子</text>
+        </view>
+
+        <view class="modal-action-item" bindtap="copyLink">
+          <text class="action-icon">📋</text>
+          <text class="action-text">复制链接</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && !postInfo}}">
+    <text class="empty-emoji">📄</text>
+    <text class="empty-text">帖子不存在</text>
+    <text class="empty-desc">该帖子可能已被删除或您没有访问权限</text>
+    <button class="btn btn-primary" bindtap="goBack">返回</button>
+  </view>
+</view>

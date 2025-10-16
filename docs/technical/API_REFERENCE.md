@@ -153,10 +153,12 @@ Authorization: Bearer <token>
 
 ### 获取帖子列表
 ```http
-GET /api/posts?page=1&per_page=10&sort=created_at&order=desc
+GET /api/posts?category=reading&keyword=深度工作&page=1&per_page=10&sort=created_at&order=desc
 ```
 
 **查询参数**:
+- `category`: 分类筛选 (reading, activity, chat, help)
+- `keyword`: 搜索关键词 (搜索标题和内容)
 - `page`: 页码 (默认: 1)
 - `per_page`: 每页数量 (默认: 10, 最大: 50)
 - `sort`: 排序字段 (created_at, updated_at, likes_count)
@@ -164,71 +166,67 @@ GET /api/posts?page=1&per_page=10&sort=created_at&order=desc
 
 **响应**:
 ```json
-{
-  "data": [
-    {
+[
+  {
+    "id": 1,
+    "title": "帖子标题",
+    "content": "帖子内容摘要...",
+    "category": "reading",
+    "category_name": "读书心得",
+    "images": ["https://example.com/image1.jpg"],
+    "tags": ["读书", "深度工作", "效率"],
+    "user_id": 1,
+    "pinned": false,
+    "hidden": false,
+    "likes_count": 5,
+    "comments_count": 3,
+    "liked_by_current_user": false,
+    "can_edit_current_user": true,
+    "time_ago": "2小时前",
+    "author_info": {
       "id": 1,
-      "title": "帖子标题",
-      "content": "帖子内容摘要...",
-      "user": {
-        "id": 1,
-        "nickname": "用户昵称",
-        "avatar_url": "https://example.com/avatar.jpg"
-      },
-      "pinned": false,
-      "hidden": false,
-      "likes_count": 5,
-      "comments_count": 3,
-      "created_at": "2025-10-16T10:00:00Z",
-      "updated_at": "2025-10-16T10:00:00Z"
-    }
-  ],
-  "pagination": {
-    "current_page": 1,
-    "total_pages": 5,
-    "total_count": 45,
-    "per_page": 10
+      "nickname": "用户昵称",
+      "avatar_url": "https://example.com/avatar.jpg",
+      "role": "用户"
+    },
+    "created_at": "2025-10-16T10:00:00Z",
+    "updated_at": "2025-10-16T10:00:00Z"
   }
-}
+]
 ```
 
 ### 获取帖子详情
 ```http
 GET /api/posts/:id
+Authorization: Bearer <token>
 ```
 
 **响应**:
 ```json
 {
-  "message": "获取成功",
-  "data": {
+  "id": 1,
+  "title": "帖子标题",
+  "content": "帖子完整内容...",
+  "category": "reading",
+  "category_name": "读书心得",
+  "images": ["https://example.com/image1.jpg"],
+  "tags": ["读书", "深度工作", "效率"],
+  "user_id": 1,
+  "pinned": false,
+  "hidden": false,
+  "likes_count": 5,
+  "comments_count": 3,
+  "liked_by_current_user": false,
+  "can_edit_current_user": true,
+  "time_ago": "2小时前",
+  "author_info": {
     "id": 1,
-    "title": "帖子标题",
-    "content": "帖子完整内容...",
-    "user": {
-      "id": 1,
-      "nickname": "用户昵称",
-      "avatar_url": "https://example.com/avatar.jpg"
-    },
-    "pinned": false,
-    "hidden": false,
-    "likes_count": 5,
-    "comments_count": 3,
-    "comments": [
-      {
-        "id": 1,
-        "content": "评论内容",
-        "user": {
-          "id": 2,
-          "nickname": "评论者",
-          "avatar_url": "https://example.com/avatar2.jpg"
-        },
-        "created_at": "2025-10-16T11:00:00Z"
-      }
-    ],
-    "created_at": "2025-10-16T10:00:00Z",
-    "updated_at": "2025-10-16T10:00:00Z"
-  }
+    "nickname": "用户昵称",
+    "avatar_url": "https://example.com/avatar.jpg",
+    "role": "用户"
+  },
+  "created_at": "2025-10-16T10:00:00Z",
+  "updated_at": "2025-10-16T10:00:00Z"
 }
 ```
 
@@ -241,28 +239,49 @@ Authorization: Bearer <token>
 **请求体**:
 ```json
 {
-  "title": "帖子标题",
-  "content": "帖子内容，至少10个字符"
+  "post": {
+    "title": "帖子标题",
+    "content": "帖子内容，至少10个字符",
+    "category": "reading",
+    "images": ["https://example.com/image1.jpg"],
+    "tags": ["读书", "深度工作", "效率"]
+  }
 }
 ```
+
+**字段说明**:
+- `title`: 帖子标题 (必填，最大100字符)
+- `content`: 帖子内容 (必填，10-5000字符)
+- `category`: 帖子分类 (可选，reading, activity, chat, help)
+- `images`: 图片URL数组 (可选，最多10张)
+- `tags`: 标签数组 (可选，最多10个标签)
 
 **响应**:
 ```json
 {
-  "message": "创建成功",
-  "data": {
+  "message": "帖子创建成功",
+  "post": {
     "id": 1,
     "title": "帖子标题",
     "content": "帖子内容...",
-    "user": {
-      "id": 1,
-      "nickname": "用户昵称",
-      "avatar_url": "https://example.com/avatar.jpg"
-    },
+    "category": "reading",
+    "category_name": "读书心得",
+    "images": ["https://example.com/image1.jpg"],
+    "tags": ["读书", "深度工作", "效率"],
+    "user_id": 1,
     "pinned": false,
     "hidden": false,
     "likes_count": 0,
     "comments_count": 0,
+    "liked_by_current_user": false,
+    "can_edit_current_user": true,
+    "time_ago": "刚刚",
+    "author_info": {
+      "id": 1,
+      "nickname": "用户昵称",
+      "avatar_url": "https://example.com/avatar.jpg",
+      "role": "用户"
+    },
     "created_at": "2025-10-16T10:00:00Z",
     "updated_at": "2025-10-16T10:00:00Z"
   }
@@ -299,6 +318,90 @@ Authorization: Bearer <admin_token>
 ```http
 POST /api/posts/:id/hide
 Authorization: Bearer <admin_token>
+```
+
+### 点赞帖子
+```http
+POST /api/posts/:id/like
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "message": "点赞成功",
+  "liked": true,
+  "likes_count": 6
+}
+```
+
+### 取消点赞
+```http
+DELETE /api/posts/:id/like
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "message": "取消点赞成功",
+  "liked": false,
+  "likes_count": 5
+}
+```
+
+### 添加评论
+```http
+POST /api/posts/:id/comments
+Authorization: Bearer <token>
+```
+
+**请求体**:
+```json
+{
+  "comment": {
+    "content": "评论内容"
+  }
+}
+```
+
+**响应**:
+```json
+{
+  "message": "评论添加成功",
+  "comment": {
+    "id": 1,
+    "content": "评论内容",
+    "user": {
+      "id": 2,
+      "nickname": "评论者",
+      "avatar_url": "https://example.com/avatar2.jpg"
+    },
+    "created_at": "2025-10-16T11:00:00Z"
+  }
+}
+```
+
+### 获取评论列表
+```http
+GET /api/posts/:id/comments
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+[
+  {
+    "id": 1,
+    "content": "评论内容",
+    "user": {
+      "id": 2,
+      "nickname": "评论者",
+      "avatar_url": "https://example.com/avatar2.jpg"
+    },
+    "created_at": "2025-10-16T11:00:00Z"
+  }
+]
 ```
 
 ---

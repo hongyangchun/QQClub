@@ -37,6 +37,14 @@ class API {
         url: '/api/auth/validate',
         method: 'GET'
       })
+    },
+
+    // 获取当前用户信息
+    me: () => {
+      return this.request({
+        url: '/api/auth/me',
+        method: 'GET'
+      })
     }
   }
 
@@ -240,6 +248,74 @@ class API {
         url: `/api/posts/${id}/comments`,
         method: 'POST',
         data: data
+      })
+    },
+
+    // 更新评论
+    updateComment: (id, data) => {
+      return this.request({
+        url: `/api/comments/${id}`,
+        method: 'PUT',
+        data: data
+      })
+    },
+
+    // 删除评论
+    deleteComment: (id) => {
+      return this.request({
+        url: `/api/comments/${id}`,
+        method: 'DELETE'
+      })
+    }
+  }
+
+  // 评论相关API
+  comment = {
+    // 更新评论
+    update: (id, data) => {
+      return this.request({
+        url: `/api/comments/${id}`,
+        method: 'PUT',
+        data: data
+      })
+    },
+
+    // 删除评论
+    delete: (id) => {
+      return this.request({
+        url: `/api/comments/${id}`,
+        method: 'DELETE'
+      })
+    }
+  }
+
+  // 图片上传API
+  upload = {
+    // 上传图片
+    image: (filePath) => {
+      return new Promise((resolve, reject) => {
+        const token = wx.getStorageSync('token')
+        wx.uploadFile({
+          url: `${this.baseUrl}/api/upload/image`,
+          filePath: filePath,
+          name: 'file',
+          header: {
+            'Authorization': `Bearer ${token}`
+          },
+          success: (res) => {
+            try {
+              const data = JSON.parse(res.data)
+              if (res.statusCode === 200) {
+                resolve(data)
+              } else {
+                reject(new Error(data.error || '上传失败'))
+              }
+            } catch (e) {
+              reject(new Error('响应格式错误'))
+            }
+          },
+          fail: reject
+        })
       })
     }
   }

@@ -24,8 +24,13 @@ App({
 
   checkLoginStatus() {
     const token = wx.getStorageSync('token')
-    if (token) {
-      // 验证token有效性
+    const userInfo = wx.getStorageSync('userInfo')
+    if (token && userInfo) {
+      // 设置全局数据
+      this.globalData.token = token
+      this.globalData.userInfo = userInfo
+
+      // 验证token有效性（静默验证，失败也不影响用户体验）
       this.validateToken(token)
     }
   },
@@ -85,7 +90,7 @@ App({
   // 验证token有效性
   validateToken(token) {
     this.request({
-      url: '/api/auth/validate',
+      url: '/api/auth/me',
       method: 'GET',
       header: {
         'Authorization': `Bearer ${token}`
@@ -99,7 +104,19 @@ App({
         this.globalData.userInfo = null
       }
     }).catch(error => {
-      console.error('验证token失败:', error)
+      // 静默处理验证失败，不影响用户体验
+      console.log('Token验证失败（可能是网络问题或服务器未启动）:', error.message)
+      // 在开发环境下，如果服务器未启动，不清除本地存储，让用户可以继续使用小程序
+      if (error.statusCode !== 401) {
+        // 401是真正的token失效，其他错误（如网络问题）不清除登录状态
+        return
+      }
+
+      // 只有在真正的认证失败时才清除存储
+      wx.removeStorageSync('token')
+      wx.removeStorageSync('userInfo')
+      this.globalData.token = null
+      this.globalData.userInfo = null
     })
   },
 

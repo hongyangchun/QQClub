@@ -179,6 +179,38 @@ Page({
     })
   },
 
+  goToNoteExport() {
+    if (!this.checkLogin()) return
+
+    wx.navigateTo({
+      url: '/pages/profile/note-export'
+    })
+  },
+
+  goToNotifications() {
+    if (!this.checkLogin()) return
+
+    wx.navigateTo({
+      url: '/pages/profile/notifications'
+    })
+  },
+
+  goToPrivacy() {
+    if (!this.checkLogin()) return
+
+    wx.navigateTo({
+      url: '/pages/profile/privacy'
+    })
+  },
+
+  goToFeedback() {
+    if (!this.checkLogin()) return
+
+    wx.navigateTo({
+      url: '/pages/profile/feedback'
+    })
+  },
+
   goToHelp() {
     wx.navigateTo({
       url: '/pages/profile/help'
@@ -244,7 +276,7 @@ Page({
   onShareAppMessage() {
     const userInfo = this.data.userInfo
     return {
-      title: userInfo ? `${userInfo.nickname}邀请你加入QQ读书会` : '发现阅读的乐趣，加入QQ读书会',
+      title: userInfo ? `${userInfo.nickname}邀请你加入恰恰读书会` : '发现阅读的乐趣，加入恰恰读书会',
       path: '/pages/index/index',
       imageUrl: '/images/share-profile.jpg'
     }
@@ -252,7 +284,7 @@ Page({
 
   onShareTimeline() {
     return {
-      title: 'QQ读书会 - 发现阅读的乐趣',
+      title: '恰恰读书会 - 发现阅读的乐趣',
       imageUrl: '/images/share-profile.jpg'
     }
   }

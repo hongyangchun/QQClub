@@ -1,0 +1,193 @@
+<!--pages/forum/list.wxml-->
+<view class="container page-container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <view class="header-title">
+        <text class="title-icon">💬</text>
+        <text>交流区</text>
+      </view>
+      <view class="header-subtitle">分享阅读心得，结识志同道合的朋友</view>
+    </view>
+  </view>
+
+  <!-- 搜索栏 -->
+  <view class="search-section">
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input class="search-input" placeholder="搜索帖子、话题、用户..." bindinput="onSearchInput" confirm-type="search" bindconfirm="onSearchConfirm" />
+        <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="clearSearch">×</view>
+      </view>
+      <button class="search-btn" bindtap="performSearch">搜索</button>
+    </view>
+  </view>
+
+  <!-- 板块切换 -->
+  <view class="category-tabs">
+    <view class="tab-item {{currentCategory === 'all' ? 'active' : ''}}" bindtap="switchCategory" data-category="all">
+      <text class="tab-text">全部</text>
+      <view class="tab-indicator" wx:if="{{currentCategory === 'all'}}"></view>
+    </view>
+    <view class="tab-item {{currentCategory === 'reading' ? 'active' : ''}}" bindtap="switchCategory" data-category="reading">
+      <text class="tab-text">读书心得</text>
+      <view class="tab-badge" wx:if="{{categoryCounts.reading > 0}}">{{categoryCounts.reading}}</view>
+      <view class="tab-indicator" wx:if="{{currentCategory === 'reading'}}"></view>
+    </view>
+    <view class="tab-item {{currentCategory === 'activity' ? 'active' : ''}}" bindtap="switchCategory" data-category="activity">
+      <text class="tab-text">活动讨论</text>
+      <view class="tab-badge" wx:if="{{categoryCounts.activity > 0}}">{{categoryCounts.activity}}</view>
+      <view class="tab-indicator" wx:if="{{currentCategory === 'activity'}}"></view>
+    </view>
+    <view class="tab-item {{currentCategory === 'chat' ? 'active' : ''}}" bindtap="switchCategory" data-category="chat">
+      <text class="tab-text">闲聊区</text>
+      <view class="tab-badge" wx:if="{{categoryCounts.chat > 0}}">{{categoryCounts.chat}}</view>
+      <view class="tab-indicator" wx:if="{{currentCategory === 'chat'}}"></view>
+    </view>
+    <view class="tab-item {{currentCategory === 'help' ? 'active' : ''}}" bindtap="switchCategory" data-category="help">
+      <text class="tab-text">求助问答</text>
+      <view class="tab-badge" wx:if="{{categoryCounts.help > 0}}">{{categoryCounts.help}}</view>
+      <view class="tab-indicator" wx:if="{{currentCategory === 'help'}}"></view>
+    </view>
+  </view>
+
+  <!-- 排序选项 -->
+  <view class="sort-section">
+    <view class="sort-tabs">
+      <view class="sort-tab {{currentSort === 'latest' ? 'active' : ''}}" bindtap="changeSort" data-sort="latest">
+        <text class="sort-text">最新</text>
+      </view>
+      <view class="sort-tab {{currentSort === 'hot' ? 'active' : ''}}" bindtap="changeSort" data-sort="hot">
+        <text class="sort-text">热门</text>
+      </view>
+      <view class="sort-tab {{currentSort === 'essence' ? 'active' : ''}}" bindtap="changeSort" data-sort="essence">
+        <text class="sort-text">精华</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 帖子列表 -->
+  <view class="posts-container" wx:if="{{posts.length > 0}}">
+    <view class="posts-list">
+      <view class="post-card" wx:for="{{posts}}" wx:key="id" bindtap="goToPostDetail" data-id="{{item.id}}">
+        <!-- 帖子头部 -->
+        <view class="post-header">
+          <view class="author-info">
+            <image class="author-avatar" src="{{item.author.avatar_url}}" mode="aspectFill"></image>
+            <view class="author-details">
+              <view class="author-name">{{item.author.nickname}}</view>
+              <view class="post-meta">
+                <text class="post-category">{{item.category_name}}</text>
+                <text class="post-time">{{item.created_at_relative}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="post-actions">
+            <view class="action-btn" catchtap="toggleMoreMenu" data-id="{{item.id}}">
+              <text class="action-icon">⋯</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 帖子内容 -->
+        <view class="post-body">
+          <view class="post-title">{{item.title}}</view>
+          <view class="post-content">{{item.content_preview}}</view>
+
+          <!-- 图片预览 -->
+          <view class="post-images" wx:if="{{item.images && item.images.length > 0}}">
+            <image class="post-image" wx:for="{{item.images}}" wx:for-item="image" wx:key="index" src="{{image}}" mode="aspectFill" bindtap="previewImage" data-urls="{{item.images}}" data-current="{{image}}"></image>
+          </view>
+        </view>
+
+        <!-- 帖子标签 -->
+        <view class="post-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <view class="tag" wx:for="{{item.tags}}" wx:key="index" bindtap="searchByTag" data-tag="{{item}}">
+            #{{item}}
+          </view>
+        </view>
+
+        <!-- 帖子底部 -->
+        <view class="post-footer">
+          <view class="post-stats">
+            <view class="stat-item">
+              <text class="stat-icon">👁️</text>
+              <text class="stat-text">{{item.views_count}}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-icon">💬</text>
+              <text class="stat-text">{{item.comments_count}}</text>
+            </view>
+            <view class="stat-item" bindtap="likePost" data-id="{{item.id}}" catchtap="true">
+              <text class="stat-icon {{item.liked_by_current_user ? 'liked' : ''}}">{{item.liked_by_current_user ? '❤️' : '🤍'}}</text>
+              <text class="stat-text">{{item.likes_count}}</text>
+            </view>
+          </view>
+          <view class="post-status" wx:if="{{item.is_essence}}">
+            <view class="essence-badge">精华</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && posts.length === 0}}">
+    <view class="empty-illustration">
+      <text class="empty-emoji">💭</text>
+    </view>
+    <view class="empty-title">暂无帖子</view>
+    <view class="empty-desc">快来发第一个帖子，开启讨论吧！</view>
+    <button class="btn btn-primary" bindtap="goToCreatePost">
+      <text>发个帖子</text>
+      <text class="btn-arrow">→</text>
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">精彩内容加载中...</text>
+  </view>
+
+  <!-- 加载更多 -->
+  <view class="load-more-section" wx:if="{{hasMore && !loading}}">
+    <button class="load-more-btn" bindtap="loadMore">
+      <text class="load-text">加载更多帖子</text>
+      <text class="load-icon">↓</text>
+    </button>
+  </view>
+
+  <!-- 没有更多 -->
+  <view class="end-reached" wx:if="{{!hasMore && posts.length > 0}}">
+    <view class="end-line"></view>
+    <text class="end-text">已经到底了</text>
+  </view>
+</view>
+
+<!-- 更多操作菜单 -->
+<view class="more-menu-modal" wx:if="{{showMoreMenu}}" bindtap="hideMoreMenu">
+  <view class="more-menu-content" catchtap="stopPropagation">
+    <view class="menu-item" wx:if="{{currentPost.author_id === userId}}" bindtap="editPost">
+      <text class="menu-icon">✏️</text>
+      <text class="menu-text">编辑帖子</text>
+    </view>
+    <view class="menu-item" wx:if="{{currentPost.author_id === userId}}" bindtap="deletePost">
+      <text class="menu-icon">🗑️</text>
+      <text class="menu-text">删除帖子</text>
+    </view>
+    <view class="menu-item" bindtap="reportPost">
+      <text class="menu-icon">🚨</text>
+      <text class="menu-text">举报帖子</text>
+    </view>
+    <view class="menu-item" bindtap="sharePost">
+      <text class="menu-icon">📤</text>
+      <text class="menu-text">分享帖子</text>
+    </view>
+  </view>
+</view>
+
+<!-- 浮动发帖按钮 -->
+<view class="fab" bindtap="goToCreatePost" wx:if="{{userInfo}}">
+  <text class="fab-icon">✍️</text>
+</view>

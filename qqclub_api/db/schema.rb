@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_101206) do
   create_table "check_ins", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "reading_schedule_id", null: false
@@ -25,6 +25,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
     t.index ["reading_schedule_id"], name: "index_check_ins_on_reading_schedule_id"
     t.index ["user_id", "reading_schedule_id"], name: "index_check_ins_on_user_id_and_reading_schedule_id", unique: true
     t.index ["user_id"], name: "index_check_ins_on_user_id"
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.text "content"
+    t.integer "post_id", null: false
+    t.integer "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id"], name: "index_comments_on_post_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
   create_table "daily_leadings", force: :cascade do |t|
@@ -68,6 +78,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
     t.index ["recipient_id"], name: "index_flowers_on_recipient_id"
   end
 
+  create_table "likes", force: :cascade do |t|
+    t.string "target_type"
+    t.integer "target_id"
+    t.integer "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.string "title", null: false
     t.text "content", null: false
@@ -76,6 +95,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
     t.boolean "hidden", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "category"
+    t.json "images"
+    t.json "tags"
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
@@ -133,6 +155,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
   add_foreign_key "check_ins", "enrollments"
   add_foreign_key "check_ins", "reading_schedules"
   add_foreign_key "check_ins", "users"
+  add_foreign_key "comments", "posts"
+  add_foreign_key "comments", "users"
   add_foreign_key "daily_leadings", "reading_schedules"
   add_foreign_key "daily_leadings", "users", column: "leader_id"
   add_foreign_key "enrollments", "reading_events"
@@ -141,6 +165,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_052429) do
   add_foreign_key "flowers", "reading_schedules"
   add_foreign_key "flowers", "users", column: "giver_id"
   add_foreign_key "flowers", "users", column: "recipient_id"
+  add_foreign_key "likes", "users"
   add_foreign_key "posts", "users"
   add_foreign_key "reading_events", "users", column: "approved_by_id"
   add_foreign_key "reading_events", "users", column: "leader_id"

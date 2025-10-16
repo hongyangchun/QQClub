@@ -1,0 +1,177 @@
+<!--pages/profile/note-export.wxml-->
+<view class="container page-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-content">
+      <view class="header-title">
+        <text class="title-icon">📋</text>
+        <text class="title-text">笔记导出</text>
+      </view>
+      <view class="header-desc">导出您在共读活动中提交的作业内容</view>
+    </view>
+  </view>
+
+  <!-- 搜索和筛选 -->
+  <view class="filter-section">
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <text class="search-icon">🔍</text>
+        <input class="search-input"
+               placeholder="搜索活动名称"
+               value="{{searchKeyword}}"
+               bindinput="onSearchInput"
+               bindconfirm="onSearchConfirm" />
+        <text class="clear-icon" wx:if="{{searchKeyword}}" bindtap="clearSearch">✕</text>
+      </view>
+    </view>
+
+    <view class="filter-tabs">
+      <view class="tab-item {{dateFilter === 'all' ? 'active' : ''}}"
+            bindtap="changeDateFilter"
+            data-filter="all">
+        <text>全部时间</text>
+      </view>
+      <view class="tab-item {{dateFilter === 'recent' ? 'active' : ''}}"
+            bindtap="changeDateFilter"
+            data-filter="recent">
+        <text>最近30天</text>
+      </view>
+      <view class="tab-item {{dateFilter === 'month' ? 'active' : ''}}"
+            bindtap="changeDateFilter"
+            data-filter="month">
+        <text>本月</text>
+      </view>
+    </view>
+
+    <view class="filter-tabs">
+      <view class="tab-item {{statusFilter === 'all' ? 'active' : ''}}"
+            bindtap="changeStatusFilter"
+            data-filter="all">
+        <text>全部状态</text>
+      </view>
+      <view class="tab-item {{statusFilter === 'ongoing' ? 'active' : ''}}"
+            bindtap="changeStatusFilter"
+            data-filter="ongoing">
+        <text>进行中</text>
+      </view>
+      <view class="tab-item {{statusFilter === 'completed' ? 'active' : ''}}"
+            bindtap="changeStatusFilter"
+            data-filter="completed">
+        <text>已结束</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 批量操作栏 -->
+  <view class="batch-actions" wx:if="{{activities.length > 0}}">
+    <view class="batch-left">
+      <checkbox class="select-all-checkbox"
+                checked="{{selectedActivities.length === activities.length && activities.length > 0}}"
+                bindtap="toggleSelectAll" />
+      <text class="batch-text">全选 ({{selectedActivities.length}}/{{activities.length}})</text>
+    </view>
+    <view class="batch-right">
+      <view class="format-selector">
+        <text class="format-label">导出格式:</text>
+        <view class="format-options">
+          <view class="format-option {{exportFormat === 'txt' ? 'active' : ''}}"
+                bindtap="changeExportFormat"
+                data-format="txt">
+            <text>TXT</text>
+          </view>
+          <view class="format-option {{exportFormat === 'md' ? 'active' : ''}}"
+                bindtap="changeExportFormat"
+                data-format="md">
+            <text>MD</text>
+          </view>
+          <view class="format-option {{exportFormat === 'pdf' ? 'active' : ''}}"
+                bindtap="changeExportFormat"
+                data-format="pdf">
+            <text>PDF</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动列表 -->
+  <view class="activities-list">
+    <view class="activity-item"
+          wx:for="{{activities}}"
+          wx:key="id"
+          bindtap="toggleActivitySelection"
+          data-id="{{item.id}}">
+
+      <view class="item-left">
+        <checkbox class="activity-checkbox"
+                  checked="{{selectedActivities.includes(item.id)}}"
+                  catchtap="toggleActivitySelection"
+                  data-id="{{item.id}}" />
+      </view>
+
+      <view class="item-content">
+        <view class="activity-header">
+          <view class="activity-title">{{item.title}}</view>
+          <view class="activity-status status-{{item.status}}">{{item.status_text}}</view>
+        </view>
+
+        <view class="activity-info">
+          <text class="info-item">📖 {{item.book_name}}</text>
+          <text class="info-item">👥 {{item.participants_count}}人参与</text>
+          <text class="info-item">📝 {{item.my_homework_count}}篇笔记</text>
+        </view>
+
+        <view class="activity-meta">
+          <text class="meta-item">开始: {{item.start_date}}</text>
+          <text class="meta-item">结束: {{item.end_date}}</text>
+          <text class="meta-item role-{{item.role}}">
+            {{item.role === 'organizer' ? '👑 领读人' : '📚 参与者'}}
+          </text>
+        </view>
+      </view>
+
+      <view class="item-right">
+        <text class="detail-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{activities.length === 0 && !loading}}">
+    <view class="empty-illustration">
+      <text class="empty-emoji">📝</text>
+    </view>
+    <view class="empty-title">暂无共读活动</view>
+    <view class="empty-desc">您还没有参与任何共读活动，快去加入一个吧！</view>
+    <view class="empty-actions">
+      <button class="btn btn-primary" bindtap="goToEvents">
+        <text>浏览活动</text>
+        <text class="btn-arrow">→</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-actions" wx:if="{{activities.length > 0}}">
+    <view class="action-buttons">
+      <button class="btn btn-secondary"
+              bindtap="previewExport"
+              disabled="{{selectedActivities.length === 0}}">
+        <text class="btn-icon">👁️</text>
+        <text>预览导出</text>
+      </button>
+      <button class="btn btn-primary"
+              bindtap="exportNotes"
+              disabled="{{selectedActivities.length === 0 || loading}}">
+        <text class="btn-icon">📥</text>
+        <text>{{loading ? '导出中...' : '导出笔记'}}</text>
+      </button>
+    </view>
+  </view>
+</view>

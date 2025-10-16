@@ -1,0 +1,42 @@
+<!--pages/forum/category.wxml-->
+<view class="container page-container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-nav">
+      <view class="nav-btn" bindtap="goBack">
+        <text class="nav-icon">‹</text>
+      </view>
+      <view class="nav-title">板块分类</view>
+    </view>
+  </view>
+
+  <!-- 分类列表 -->
+  <view class="category-list">
+    <view class="category-item" wx:for="{{categories}}" wx:key="id" bindtap="selectCategory" data-category="{{item}}">
+      <view class="category-icon-wrapper">
+        <text class="category-icon">{{item.icon}}</text>
+      </view>
+
+      <view class="category-info">
+        <view class="category-name">{{item.name}}</view>
+        <view class="category-desc">{{item.description}}</view>
+        <view class="category-stats">
+          <text class="stat-text">{{item.posts_count}}篇帖子</text>
+          <text class="stat-divider">·</text>
+          <text class="stat-text">{{item.today_posts}}篇今日新增</text>
+        </view>
+      </view>
+
+      <view class="category-arrow">
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{categories.length === 0}}">
+    <text class="empty-emoji">📂</text>
+    <text class="empty-text">暂无分类</text>
+    <text class="empty-desc">还没有创建任何板块分类</text>
+  </view>
+</view>

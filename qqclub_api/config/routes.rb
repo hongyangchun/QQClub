@@ -23,8 +23,17 @@ Rails.application.routes.draw do
         post :unpin
         post :hide
         post :unhide
+        post :like
+        delete :like
       end
+      resources :comments, only: [:index, :create]
     end
+
+    # 评论路由（独立路由用于更新和删除）
+    resources :comments, only: [:update, :destroy]
+
+    # 图片上传路由
+    post 'upload/image', to: 'uploads#create'
 
     # 活动路由
     resources :events do

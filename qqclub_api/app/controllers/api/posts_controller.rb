@@ -12,8 +12,14 @@ module Api
         @posts = Post.includes(:user).pinned_first
       end
 
+      # 按分类筛选
+      if params[:category].present?
+        @posts = @posts.by_category(params[:category])
+      end
+
       render json: @posts.map { |post|
         post.instance_variable_set(:@can_edit_current_user, post.can_edit?(current_user))
+        post.instance_variable_set(:@current_user, current_user)
         post.as_json
       }
     end
@@ -30,6 +36,7 @@ module Api
       end
 
       @post.instance_variable_set(:@can_edit_current_user, @post.can_edit?(current_user))
+      @post.instance_variable_set(:@current_user, current_user)
       render json: @post.as_json
     end
 
@@ -153,10 +160,40 @@ module Api
       }
     end
 
+    # POST /api/posts/:id/like  # 点赞帖子
+    def like
+      @post = Post.find(params[:id])
+
+      if Like.like!(current_user, @post)
+        render json: {
+          message: "点赞成功",
+          liked: true,
+          likes_count: @post.likes_count
+        }
+      else
+        render json: { error: "已经点赞过了" }, status: :unprocessable_entity
+      end
+    end
+
+    # DELETE /api/posts/:id/like  # 取消点赞
+    def unlike
+      @post = Post.find(params[:id])
+
+      if Like.unlike!(current_user, @post)
+        render json: {
+          message: "取消点赞成功",
+          liked: false,
+          likes_count: @post.likes_count
+        }
+      else
+        render json: { error: "还未点赞" }, status: :unprocessable_entity
+      end
+    end
+
     private
 
     def post_params
-      params.require(:post).permit(:title, :content)
+      params.require(:post).permit(:title, :content, :category, :images, tags: [])
     end
   end
 end

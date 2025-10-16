@@ -1,124 +1,305 @@
 <!--pages/profile/profile.wxml-->
 <view class="container page-container">
-  <!-- 用户信息卡片 -->
-  <view class="card user-profile-card" wx:if="{{userInfo}}">
-    <view class="card-body">
-      <view class="profile-header">
-        <image class="avatar avatar-large" src="{{userInfo.avatar_url}}" mode="aspectFill" bindtap="changeAvatar"></image>
-        <view class="profile-info">
-          <view class="nickname text-large">{{userInfo.nickname}}</view>
-          <view class="phone text-small text-secondary" wx:if="{{userInfo.phone}}">📱 {{userInfo.phone}}</view>
-          <view class="join-date text-small text-hint">加入时间：{{userInfo.created_at}}</view>
+  <!-- 个人信息头部 -->
+  <view class="profile-hero" wx:if="{{userInfo}}">
+    <view class="hero-background"></view>
+    <view class="hero-content">
+      <view class="profile-section">
+        <!-- 用户头像区域 -->
+        <view class="avatar-section">
+          <view class="avatar-wrapper" bindtap="changeAvatar">
+            <image class="avatar avatar-xlarge" src="{{userInfo.avatar_url}}" mode="aspectFill"></image>
+            <view class="avatar-border"></view>
+            <view class="avatar-edit">
+              <text class="edit-icon">📷</text>
+            </view>
+          </view>
+          <view class="user-level">
+            <text class="level-badge">Lv.{{userInfo.level || 1}}</text>
+          </view>
         </view>
-        <view class="profile-actions">
-          <view class="btn btn-outline btn-small" bindtap="editProfile">编辑资料</view>
+
+        <!-- 用户基本信息 -->
+        <view class="user-info">
+          <view class="user-name">
+            <text class="name-text">{{userInfo.nickname}}</text>
+            <view class="verified-badge" wx:if="{{userInfo.verified}}">
+              <text class="verified-icon">✓</text>
+            </view>
+          </view>
+          <view class="user-bio" wx:if="{{userInfo.bio}}">
+            <text class="bio-text">{{userInfo.bio}}</text>
+          </view>
+          <view class="user-meta">
+            <view class="meta-item">
+              <text class="meta-icon">📅</text>
+              <text class="meta-text">{{userInfo.created_at}} 加入</text>
+            </view>
+          </view>
+          <view class="profile-actions">
+            <button class="action-btn primary" bindtap="editProfile">
+              <text class="btn-icon">✏️</text>
+              <text class="btn-text">编辑资料</text>
+            </button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 个人统计卡片 -->
+      <view class="stats-section">
+        <view class="stats-grid">
+          <view class="stat-card primary" bindtap="goToMyEvents">
+            <view class="stat-icon">📚</view>
+            <view class="stat-content">
+              <view class="stat-number">{{stats.events_count || 0}}</view>
+              <view class="stat-label">参与活动</view>
+            </view>
+            <view class="stat-trend" wx:if="{{stats.events_trend > 0}}">
+              <text class="trend-icon">📈</text>
+            </view>
+          </view>
+          <view class="stat-card secondary" bindtap="goToMyPosts">
+            <view class="stat-icon">✍️</view>
+            <view class="stat-content">
+              <view class="stat-number">{{stats.posts_count || 0}}</view>
+              <view class="stat-label">发布动态</view>
+            </view>
+            <view class="stat-trend" wx:if="{{stats.posts_trend > 0}}">
+              <text class="trend-icon">📈</text>
+            </view>
+          </view>
+          <view class="stat-card accent" bindtap="goToMyLikes">
+            <view class="stat-icon">❤️</view>
+            <view class="stat-content">
+              <view class="stat-number">{{stats.likes_count || 0}}</view>
+              <view class="stat-label">获得点赞</view>
+            </view>
+            <view class="stat-trend" wx:if="{{stats.likes_trend > 0}}">
+              <text class="trend-icon">📈</text>
+            </view>
+          </view>
+          <view class="stat-card success" bindtap="goToMyFlowers">
+            <view class="stat-icon">🌸</view>
+            <view class="stat-content">
+              <view class="stat-number">{{stats.flowers_count || 0}}</view>
+              <view class="stat-label">小红花</view>
+            </view>
+            <view class="stat-trend" wx:if="{{stats.flowers_trend > 0}}">
+              <text class="trend-icon">📈</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 阅读成就进度 -->
+        <view class="achievement-section">
+          <view class="achievement-header">
+            <text class="achievement-title">阅读成就</text>
+            <text class="achievement-desc">继续努力，解锁更多成就！</text>
+          </view>
+          <view class="achievement-progress">
+            <view class="progress-item">
+              <view class="progress-info">
+                <text class="progress-label">连续阅读</text>
+                <text class="progress-value">7天</text>
+              </view>
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: 70%"></view>
+              </view>
+            </view>
+            <view class="progress-item">
+              <view class="progress-info">
+                <text class="progress-label">本月阅读</text>
+                <text class="progress-value">12小时</text>
+              </view>
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: 40%"></view>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
   </view>
 
-  <!-- 统计数据 -->
-  <view class="stats-grid" wx:if="{{userInfo}}">
-    <view class="stat-item" bindtap="goToMyEvents">
-      <view class="stat-number">{{stats.events_count || 0}}</view>
-      <view class="stat-label">参与活动</view>
-    </view>
-    <view class="stat-item" bindtap="goToMyPosts">
-      <view class="stat-number">{{stats.posts_count || 0}}</view>
-      <view class="stat-label">发布动态</view>
-    </view>
-    <view class="stat-item" bindtap="goToMyLikes">
-      <view class="stat-number">{{stats.likes_count || 0}}</view>
-      <view class="stat-label">获赞</view>
-    </view>
-    <view class="stat-item" bindtap="goToMyFlowers">
-      <view class="stat-number">{{stats.flowers_count || 0}}</view>
-      <view class="stat-label">小红花</view>
-    </view>
-  </view>
-
-  <!-- 功能菜单 -->
-  <view class="menu-section">
-    <view class="menu-group">
-      <view class="menu-item" bindtap="goToMyEvents">
-        <view class="menu-icon">📚</view>
-        <view class="menu-content">
-          <view class="menu-title">我的活动</view>
-          <view class="menu-desc">查看参与和创建的活动</view>
-        </view>
-        <view class="menu-arrow">></view>
+  <!-- 功能菜单区域 -->
+  <view class="features-section" wx:if="{{userInfo}}">
+    <!-- 我的内容 -->
+    <view class="feature-group">
+      <view class="group-header">
+        <text class="group-title">我的内容</text>
       </view>
-      <view class="menu-item" bindtap="goToMyPosts">
-        <view class="menu-icon">✍️</view>
-        <view class="menu-content">
-          <view class="menu-title">我的动态</view>
-          <view class="menu-desc">查看发布的打卡动态</view>
+      <view class="feature-grid">
+        <view class="feature-item" bindtap="goToMyEvents">
+          <view class="feature-icon-wrapper primary">
+            <text class="feature-icon">📚</text>
+          </view>
+          <view class="feature-content">
+            <view class="feature-title">我的活动</view>
+            <view class="feature-count">{{stats.events_count || 0}}</view>
+          </view>
         </view>
-        <view class="menu-arrow">></view>
-      </view>
-      <view class="menu-item" bindtap="goToMyLikes">
-        <view class="menu-icon">❤️</view>
-        <view class="menu-content">
-          <view class="menu-title">我的点赞</view>
-          <view class="menu-desc">查看点赞的内容</view>
+        <view class="feature-item" bindtap="goToMyPosts">
+          <view class="feature-icon-wrapper secondary">
+            <text class="feature-icon">✍️</text>
+          </view>
+          <view class="feature-content">
+            <view class="feature-title">我的动态</view>
+            <view class="feature-count">{{stats.posts_count || 0}}</view>
+          </view>
         </view>
-        <view class="menu-arrow">></view>
+        <view class="feature-item" bindtap="goToMyLikes">
+          <view class="feature-icon-wrapper accent">
+            <text class="feature-icon">❤️</text>
+          </view>
+          <view class="feature-content">
+            <view class="feature-title">我的点赞</view>
+            <view class="feature-count">{{stats.likes_count || 0}}</view>
+          </view>
+        </view>
+        <view class="feature-item" bindtap="goToMyFlowers">
+          <view class="feature-icon-wrapper success">
+            <text class="feature-icon">🌸</text>
+          </view>
+          <view class="feature-content">
+            <view class="feature-title">小红花</view>
+            <view class="feature-count">{{stats.flowers_count || 0}}</view>
+          </view>
+        </view>
       </view>
     </view>
 
-    <view class="menu-group">
-      <view class="menu-item" bindtap="goToSettings">
-        <view class="menu-icon">⚙️</view>
-        <view class="menu-content">
-          <view class="menu-title">设置</view>
-          <view class="menu-desc">账号设置、隐私设置等</view>
-        </view>
-        <view class="menu-arrow">></view>
+    <!-- 应用设置 -->
+    <view class="settings-group">
+      <view class="group-header">
+        <text class="group-title">应用设置</text>
       </view>
-      <view class="menu-item" bindtap="goToHelp">
-        <view class="menu-icon">❓</view>
-        <view class="menu-content">
-          <view class="menu-title">帮助与反馈</view>
-          <view class="menu-desc">使用帮助、问题反馈</view>
+      <view class="settings-list">
+        <view class="setting-item" bindtap="goToSettings">
+          <view class="setting-left">
+            <view class="setting-icon">⚙️</view>
+            <view class="setting-content">
+              <view class="setting-title">账号设置</view>
+              <view class="setting-desc">个人信息、隐私设置</view>
+            </view>
+          </view>
+          <view class="setting-right">
+            <text class="setting-arrow">›</text>
+          </view>
         </view>
-        <view class="menu-arrow">></view>
-      </view>
-      <view class="menu-item" bindtap="goToAbout">
-        <view class="menu-icon">ℹ️</view>
-        <view class="menu-content">
-          <view class="menu-title">关于我们</view>
-          <view class="menu-desc">版本信息、联系方式</view>
+        <view class="setting-item" bindtap="goToNotifications">
+          <view class="setting-left">
+            <view class="setting-icon">🔔</view>
+            <view class="setting-content">
+              <view class="setting-title">通知设置</view>
+              <view class="setting-desc">消息推送、提醒设置</view>
+            </view>
+          </view>
+          <view class="setting-right">
+            <view class="notification-badge" wx:if="{{unreadCount > 0}}">{{unreadCount}}</view>
+            <text class="setting-arrow">›</text>
+          </view>
         </view>
-        <view class="menu-arrow">></view>
+        <view class="setting-item" bindtap="goToNoteExport">
+          <view class="setting-left">
+            <view class="setting-icon">📋</view>
+            <view class="setting-content">
+              <view class="setting-title">笔记导出</view>
+              <view class="setting-desc">导出共读活动作业内容</view>
+            </view>
+          </view>
+          <view class="setting-right">
+            <text class="setting-arrow">›</text>
+          </view>
+        </view>
+        <view class="setting-item" bindtap="goToPrivacy">
+          <view class="setting-left">
+            <view class="setting-icon">🔒</view>
+            <view class="setting-content">
+              <view class="setting-title">隐私设置</view>
+              <view class="setting-desc">数据使用、隐私保护</view>
+            </view>
+          </view>
+          <view class="setting-right">
+            <text class="setting-arrow">›</text>
+          </view>
+        </view>
       </view>
     </view>
 
-    <view class="menu-group">
-      <view class="menu-item logout-item" bindtap="logout">
-        <view class="menu-icon">🚪</view>
-        <view class="menu-content">
-          <view class="menu-title text-error">退出登录</view>
-          <view class="menu-desc text-secondary">退出当前账号</view>
-        </view>
-        <view class="menu-arrow">></view>
+    <!-- 帮助与支持 -->
+    <view class="support-group">
+      <view class="group-header">
+        <text class="group-title">帮助与支持</text>
       </view>
+      <view class="support-list">
+        <view class="support-item" bindtap="goToHelp">
+          <view class="support-left">
+            <view class="support-icon">❓</view>
+            <view class="support-content">
+              <view class="support-title">帮助中心</view>
+              <view class="support-desc">使用指南、常见问题</view>
+            </view>
+          </view>
+          <view class="support-right">
+            <text class="support-arrow">›</text>
+          </view>
+        </view>
+        <view class="support-item" bindtap="goToFeedback">
+          <view class="support-left">
+            <view class="support-icon">💬</view>
+            <view class="support-content">
+              <view class="support-title">意见反馈</view>
+              <view class="support-desc">问题报告、功能建议</view>
+            </view>
+          </view>
+          <view class="support-right">
+            <text class="support-arrow">›</text>
+          </view>
+        </view>
+        <view class="support-item" bindtap="goToAbout">
+          <view class="support-left">
+            <view class="support-icon">ℹ️</view>
+            <view class="support-content">
+              <view class="support-title">关于我们</view>
+              <view class="support-desc">版本信息、联系方式</view>
+            </view>
+          </view>
+          <view class="support-right">
+            <text class="support-arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="logout-section">
+      <button class="logout-btn" bindtap="logout">
+        <text class="logout-icon">🚪</text>
+        <text class="logout-text">退出登录</text>
+      </button>
     </view>
   </view>
 
   <!-- 未登录状态 -->
-  <view class="login-prompt" wx:if="{{!userInfo}}">
-    <view class="card">
-      <view class="card-body text-center">
-        <view class="empty-icon">👤</view>
-        <view class="empty-text">未登录</view>
-        <view class="empty-desc">登录后查看个人信息</view>
-        <button class="btn btn-primary btn-block mt-4" bindtap="goToLogin">立即登录</button>
+  <view class="login-section" wx:if="{{!userInfo}}">
+    <view class="login-card">
+      <view class="login-illustration">
+        <text class="login-emoji">👤</text>
       </view>
+      <view class="login-title">欢迎来到恰恰读书会</view>
+      <view class="login-subtitle">登录后查看个人信息，享受完整功能</view>
+      <button class="btn btn-primary btn-login" bindtap="goToLogin">
+        <text class="btn-text">立即登录</text>
+        <text class="btn-arrow">→</text>
+      </button>
     </view>
   </view>
 
   <!-- 版本信息 -->
-  <view class="version-info">
-    <text class="text-mini text-hint">QQ读书会 v1.0.0</text>
+  <view class="version-section">
+    <view class="version-info">
+      <text class="version-text">恰恰读书会 v2.0.0</text>
+      <text class="version-desc">让阅读成为习惯</text>
+    </view>
   </view>
 </view>

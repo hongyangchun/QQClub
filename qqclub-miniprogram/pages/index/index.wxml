@@ -1,115 +1,202 @@
 <!--pages/index/index.wxml-->
 <view class="container page-container">
   <!-- 用户信息卡片 -->
-  <view class="card user-card" wx:if="{{userInfo}}">
-    <view class="card-body">
-      <view class="flex items-center">
-        <image class="avatar avatar-medium mr-3" src="{{userInfo.avatar_url}}" mode="aspectFill"></image>
-        <view class="flex-1">
-          <view class="text-medium mb-1">{{userInfo.nickname}}</view>
-          <view class="text-small text-secondary">欢迎来到QQ读书会</view>
+  <view class="hero-section" wx:if="{{userInfo}}">
+    <view class="user-card">
+      <view class="card-body">
+        <view class="user-header">
+          <view class="user-avatar-wrapper">
+            <image class="avatar avatar-large" src="{{userInfo.avatar_url}}" mode="aspectFill"></image>
+            <view class="avatar-ring"></view>
+          </view>
+          <view class="user-info">
+            <view class="greeting">早上好 👋</view>
+            <view class="username">{{userInfo.nickname}}</view>
+            <view class="user-status">准备好了开始今天的阅读之旅吗？</view>
+          </view>
+          <view class="user-actions">
+            <view class="action-btn" bindtap="goToProfile">
+              <text class="action-icon">👤</text>
+            </view>
+          </view>
         </view>
-        <view class="btn btn-outline btn-small" bindtap="goToProfile">个人中心</view>
+
+        <!-- 今日阅读统计 -->
+        <view class="reading-stats">
+          <view class="stat-item">
+            <view class="stat-number">7</view>
+            <view class="stat-label">连续天数</view>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item">
+            <view class="stat-number">23</view>
+            <view class="stat-label">已读书籍</view>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item">
+            <view class="stat-number">156</view>
+            <view class="stat-label">阅读时长</view>
+          </view>
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 未登录提示 -->
-  <view class="card login-prompt" wx:if="{{!userInfo}}">
-    <view class="card-body text-center">
-      <view class="text-large mb-3">登录QQ读书会</view>
-      <view class="text-secondary mb-4">发现阅读的乐趣，结识志同道合的朋友</view>
-      <button class="btn btn-primary btn-block" bindtap="goToLogin">立即登录</button>
+  <view class="hero-section" wx:if="{{!userInfo}}">
+    <view class="welcome-card">
+      <view class="card-body text-center">
+        <view class="welcome-icon">📚</view>
+        <view class="welcome-title">开启阅读之旅</view>
+        <view class="welcome-subtitle">加入恰恰读书会，发现更好的自己</view>
+        <button class="btn btn-primary btn-welcome" bindtap="goToLogin">
+          <text>立即开始</text>
+          <text class="btn-arrow">→</text>
+        </button>
+      </view>
     </view>
   </view>
 
-  <!-- 功能入口 -->
-  <view class="feature-grid" wx:if="{{userInfo}}">
-    <view class="feature-item" bindtap="goToEvents">
-      <view class="feature-icon">📚</view>
-      <view class="feature-title">读书活动</view>
-      <view class="feature-desc">参加精彩活动</view>
-    </view>
-    <view class="feature-item" bindtap="goToPosts">
-      <view class="feature-icon">✍️</view>
-      <view class="feature-title">每日打卡</view>
-      <view class="feature-desc">记录阅读心得</view>
-    </view>
-    <view class="feature-item" bindtap="goToCreateEvent">
-      <view class="feature-icon">➕</view>
-      <view class="feature-title">创建活动</view>
-      <view class="feature-desc">组织读书活动</view>
-    </view>
-    <view class="feature-item" bindtap="goToCreatePost">
-      <view class="feature-icon">💭</view>
-      <view class="feature-title">发布动态</view>
-      <view class="feature-desc">分享阅读感悟</view>
-    </view>
-  </view>
-
-  <!-- 最新活动 -->
-  <view class="section" wx:if="{{userInfo && recentEvents.length > 0}}">
+  <!-- 快速操作区 -->
+  <view class="quick-actions" wx:if="{{userInfo}}">
     <view class="section-header">
-      <view class="section-title">最新活动</view>
-      <view class="section-more" bindtap="goToEvents">查看更多</view>
+      <view class="section-title">快速操作</view>
     </view>
-    <view class="event-list">
-      <view class="event-item card" wx:for="{{recentEvents}}" wx:key="id" bindtap="goToEventDetail" data-id="{{item.id}}">
-        <view class="card-body">
-          <view class="event-status mb-2">
-            <text class="tag {{item.approval_status === 'approved' ? 'tag-success' : item.approval_status === 'rejected' ? 'tag-error' : 'tag-secondary'}}">
-              {{item.approval_status_text}}
-            </text>
-            <text class="tag tag-primary">{{item.status_text}}</text>
-          </view>
-          <view class="event-title text-medium mb-2">{{item.title}}</view>
-          <view class="event-book text-small text-secondary mb-2">📖 {{item.book_name}}</view>
-          <view class="event-info flex justify-between text-small text-hint">
-            <text>👥 {{item.participants_count}}/{{item.max_participants}}人</text>
-            <text>📅 {{item.date_range}}</text>
-          </view>
+    <view class="action-grid">
+      <view class="action-card primary-action" bindtap="goToMyActivities">
+        <view class="action-bg"></view>
+        <view class="action-content">
+          <view class="action-icon">🎯</view>
+          <view class="action-title">我的活动</view>
+          <view class="action-desc">管理我的活动</view>
+        </view>
+      </view>
+      <view class="action-card secondary-action" bindtap="goToPosts">
+        <view class="action-bg"></view>
+        <view class="action-content">
+          <view class="action-icon">💬</view>
+          <view class="action-title">自由交流</view>
+          <view class="action-desc">查看交流内容</view>
+        </view>
+      </view>
+      <view class="action-card warning-action" bindtap="goToMessages">
+        <view class="action-bg"></view>
+        <view class="action-content">
+          <view class="action-icon">📬</view>
+          <view class="action-title">消息动态</view>
+          <view class="action-desc">查看通知提醒</view>
+          <view class="message-badge" wx:if="{{unreadCount > 0}}">{{unreadCount}}</view>
+        </view>
+      </view>
+      <view class="action-card success-action" bindtap="goToStats">
+        <view class="action-bg"></view>
+        <view class="action-content">
+          <view class="action-icon">📊</view>
+          <view class="action-title">数据统计</view>
+          <view class="action-desc">阅读进度</view>
         </view>
       </view>
     </view>
   </view>
 
-  <!-- 最新动态 -->
-  <view class="section" wx:if="{{userInfo && recentPosts.length > 0}}">
-    <view class="section-header">
-      <view class="section-title">最新动态</view>
-      <view class="section-more" bindtap="goToPosts">查看更多</view>
-    </view>
-    <view class="post-list">
-      <view class="post-item card" wx:for="{{recentPosts}}" wx:key="id" bindtap="goToPostDetail" data-id="{{item.id}}">
-        <view class="card-body">
-          <view class="post-author flex items-center mb-2">
-            <image class="avatar avatar-small mr-2" src="{{item.author_info.avatar_url}}" mode="aspectFill"></image>
-            <view class="flex-1">
-              <view class="text-small">{{item.author_info.nickname}}</view>
-              <view class="text-mini text-hint">{{item.created_at_relative}}</view>
+  <!-- 内容区域 -->
+  <view class="content-section" wx:if="{{userInfo}}">
+    <!-- 最新活动 -->
+    <view class="content-block" wx:if="{{recentEvents.length > 0}}">
+      <view class="section-header">
+        <view class="section-title">
+          <text class="title-icon">📚</text>
+          <text>最新活动</text>
+        </view>
+        <view class="section-more" bindtap="goToEvents">
+          <text>查看全部</text>
+          <text class="more-arrow">›</text>
+        </view>
+      </view>
+      <view class="event-list">
+        <view class="event-card" wx:for="{{recentEvents}}" wx:key="id" bindtap="goToEventDetail" data-id="{{item.id}}">
+          <view class="event-header">
+            <view class="event-status">
+              <view class="status-dot {{item.approval_status === 'approved' ? 'approved' : item.approval_status === 'rejected' ? 'rejected' : 'pending'}}"></view>
+              <text class="status-text">{{item.approval_status_text}}</text>
+            </view>
+            <view class="event-badge">{{item.status_text}}</view>
+          </view>
+          <view class="event-body">
+            <view class="event-title">{{item.title}}</view>
+            <view class="event-book">📖 {{item.book_name}}</view>
+            <view class="event-meta">
+              <view class="meta-item">
+                <text class="meta-icon">👥</text>
+                <text class="meta-text">{{item.participants_count}}/{{item.max_participants}}</text>
+              </view>
+              <view class="meta-item">
+                <text class="meta-icon">📅</text>
+                <text class="meta-text">{{item.date_range}}</text>
+              </view>
             </view>
           </view>
-          <view class="post-title text-medium mb-2">{{item.title}}</view>
-          <view class="post-content text-small text-secondary mb-2">{{item.content_preview}}</view>
-          <view class="post-stats flex items-center text-small text-hint">
-            <text class="mr-3">❤️ {{item.likes_count}}</text>
-            <text class="mr-3">💬 {{item.comments_count}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最新动态 -->
+    <view class="content-block" wx:if="{{recentPosts.length > 0}}">
+      <view class="section-header">
+        <view class="section-title">
+          <text class="title-icon">✍️</text>
+          <text>读书动态</text>
+        </view>
+        <view class="section-more" bindtap="goToPosts">
+          <text>查看全部</text>
+          <text class="more-arrow">›</text>
+        </view>
+      </view>
+      <view class="post-list">
+        <view class="post-card" wx:for="{{recentPosts}}" wx:key="id" bindtap="goToPostDetail" data-id="{{item.id}}">
+          <view class="post-header">
+            <view class="author-info">
+              <image class="avatar avatar-small" src="{{item.author_info.avatar_url}}" mode="aspectFill"></image>
+              <view class="author-details">
+                <view class="author-name">{{item.author_info.nickname}}</view>
+                <view class="post-time">{{item.created_at_relative}}</view>
+              </view>
+            </view>
+            <view class="post-menu">⋯</view>
+          </view>
+          <view class="post-body">
+            <view class="post-title">{{item.title}}</view>
+            <view class="post-content">{{item.content_preview}}</view>
+          </view>
+          <view class="post-footer">
+            <view class="post-stats">
+              <view class="stat-item">
+                <text class="stat-icon">❤️</text>
+                <text class="stat-text">{{item.likes_count}}</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-icon">💬</text>
+                <text class="stat-text">{{item.comments_count}}</text>
+              </view>
+            </view>
           </view>
         </view>
       </view>
     </view>
-  </view>
 
-  <!-- 空状态 -->
-  <view class="empty" wx:if="{{userInfo && recentEvents.length === 0 && recentPosts.length === 0}}">
-    <view class="empty-icon">📚</view>
-    <view class="empty-text">暂无活动或动态</view>
-    <view class="empty-desc">快来创建第一个活动或发布动态吧！</view>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{recentEvents.length === 0 && recentPosts.length === 0}}">
+      <view class="empty-illustration">
+        <text class="empty-emoji">🌱</text>
+      </view>
+      <view class="empty-title">开始你的阅读之旅</view>
+      <view class="empty-desc">加入活动或参与交流，开始精彩的阅读体验</view>
+    </view>
   </view>
 
   <!-- 加载状态 -->
-  <view class="loading" wx:if="{{loading}}">
+  <view class="loading-overlay" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
-    <text>加载中...</text>
+    <text class="loading-text">精彩内容加载中...</text>
   </view>
 </view>

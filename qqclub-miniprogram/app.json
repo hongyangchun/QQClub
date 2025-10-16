@@ -6,20 +6,23 @@
     "pages/event/list",
     "pages/event/detail",
     "pages/event/create",
-    "pages/post/list",
-    "pages/post/detail",
-    "pages/post/create"
+    "pages/event/stats",
+    "pages/forum/list",
+    "pages/forum/detail",
+    "pages/forum/create",
+    "pages/forum/category",
+    "pages/profile/note-export"
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#7CB342",
-    "navigationBarTitleText": "QQ读书会",
+    "navigationBarBackgroundColor": "#4F46E5",
+    "navigationBarTitleText": "恰恰读书会",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f8f9fa"
+    "backgroundColor": "#f8f9ff"
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#7CB342",
+    "color": "#6B7280",
+    "selectedColor": "#4F46E5",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
@@ -29,11 +32,11 @@
       },
       {
         "pagePath": "pages/event/list",
-        "text": "读书活动"
+        "text": "共读区"
       },
       {
-        "pagePath": "pages/post/list",
-        "text": "打卡"
+        "pagePath": "pages/forum/list",
+        "text": "交流区"
       },
       {
         "pagePath": "pages/profile/profile",

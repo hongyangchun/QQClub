@@ -205,15 +205,6 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-/**
- * 手机号验证
- * @param {string} phone 手机号
- * @returns {boolean} 是否有效
- */
-function isValidPhone(phone) {
-  const phoneRegex = /^1[3-9]\d{9}$/
-  return phoneRegex.test(phone)
-}
 
 /**
  * 邮箱验证
@@ -373,7 +364,6 @@ module.exports = {
   randomString,
   getFileExtension,
   formatFileSize,
-  isValidPhone,
   isValidEmail,
   parseUrlParams,
   objectToUrlParams,

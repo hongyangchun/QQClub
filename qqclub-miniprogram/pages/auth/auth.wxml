@@ -3,7 +3,7 @@
   <!-- 头部Logo区域 -->
   <view class="auth-header">
     <view class="logo">📚</view>
-    <view class="title">QQ读书会</view>
+    <view class="title">恰恰读书会</view>
     <view class="subtitle">发现阅读的乐趣，结识志同道合的朋友</view>
   </view>
 
@@ -37,51 +37,7 @@
       </view>
     </view>
 
-    <!-- 手机号登录 -->
-    <view class="login-section">
-      <view class="section-title">手机号登录</view>
-      <form bindsubmit="phoneLogin">
-        <view class="form-item">
-          <input
-            class="form-input"
-            type="number"
-            placeholder="请输入手机号"
-            maxlength="11"
-            value="{{phoneNumber}}"
-            bindinput="onPhoneNumberInput"
-          />
-        </view>
-        <view class="form-item">
-          <view class="flex">
-            <input
-              class="form-input flex-1"
-              type="number"
-              placeholder="请输入验证码"
-              maxlength="6"
-              value="{{verifyCode}}"
-              bindinput="onVerifyCodeInput"
-            />
-            <button
-              class="btn btn-outline ml-2"
-              bindtap="sendVerifyCode"
-              disabled="{{codeSending || countdown > 0}}"
-            >
-              {{codeSending ? '发送中...' : countdown > 0 ? countdown + 's' : '获取验证码'}}
-            </button>
-          </view>
-        </view>
-        <button
-          class="login-btn btn btn-primary btn-block"
-          form-type="submit"
-          disabled="{{phoneLoading}}"
-        >
-          <text class="login-icon" wx:if="{{!phoneLoading}}">📱</text>
-          <view class="loading-spinner" wx:if="{{phoneLoading}}"></view>
-          <text>{{phoneLoading ? '登录中...' : '登录'}}</text>
-        </button>
-      </form>
     </view>
-  </view>
 
   <!-- 用户协议 -->
   <view class="auth-agreement">

@@ -206,6 +206,10 @@ class PostManagementService < ApplicationService
       'id' => post.id,
       'title' => post.title,
       'content' => post.content,
+      'category' => post.category,
+      'category_name' => post.category_name,
+      'images' => post.images || [],
+      'tags' => post.tags || [],
       'user_id' => post.user_id,
       'pinned' => post.pinned,
       'hidden' => post.hidden,
@@ -218,7 +222,9 @@ class PostManagementService < ApplicationService
         'role' => post.user.role_display_name
       },
       'can_edit_current_user' => false,
-      'time_ago' => post.time_ago
+      'time_ago' => post.time_ago,
+      'likes_count' => post.likes_count,
+      'comments_count' => post.comments_count
     }
   end
 end

@@ -1,0 +1,234 @@
+<!--pages/event/stats.wxml-->
+<view class="container page-container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-nav">
+      <view class="nav-btn" bindtap="goBack">
+        <text class="nav-icon">‹</text>
+      </view>
+      <view class="nav-title">活动数据统计</view>
+      <view class="nav-btn" bindtap="shareStats">
+        <text class="nav-icon">📤</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动概览卡片 -->
+  <view class="overview-section" wx:if="{{eventInfo}}">
+    <view class="overview-card">
+      <view class="event-basic">
+        <view class="event-title">{{eventInfo.title}}</view>
+        <view class="event-subtitle">{{eventInfo.book_name}}</view>
+        <view class="event-status {{eventInfo.status}}">
+          <text class="status-icon">{{eventInfo.status_icon}}</text>
+          <text class="status-text">{{eventInfo.status_text}}</text>
+        </view>
+      </view>
+
+      <view class="progress-overview">
+        <view class="progress-circle">
+          <view class="circle-progress">
+            <view class="progress-value">{{overallProgress}}%</view>
+            <view class="progress-label">总体进度</view>
+          </view>
+        </view>
+        <view class="progress-info">
+          <view class="progress-item">
+            <text class="progress-label">活动天数</text>
+            <text class="progress-value">{{eventInfo.days_count}}天</text>
+          </view>
+          <view class="progress-item">
+            <text class="progress-label">已进行</text>
+            <text class="progress-value">{{eventInfo.days_passed}}天</text>
+          </view>
+          <view class="progress-item">
+            <text class="progress-label">剩余</text>
+            <text class="progress-value">{{eventInfo.days_left}}天</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 参与统计 -->
+  <view class="stats-section">
+    <view class="section-header">
+      <text class="section-title">参与统计</text>
+      <text class="section-subtitle">实时更新</text>
+    </view>
+
+    <view class="stats-grid">
+      <view class="stat-card primary">
+        <view class="stat-icon">👥</view>
+        <view class="stat-content">
+          <view class="stat-number">{{eventInfo.participants_count}}</view>
+          <view class="stat-label">参与人数</view>
+        </view>
+      </view>
+
+      <view class="stat-card success">
+        <view class="stat-icon">✅</view>
+        <view class="stat-content">
+          <view class="stat-number">{{completedTodayCount}}</view>
+          <view class="stat-label">今日完成</view>
+        </view>
+      </view>
+
+      <view class="stat-card warning">
+        <view class="stat-icon">⏰</view>
+        <view class="stat-content">
+          <view class="stat-number">{{pendingTodayCount}}</view>
+          <view class="stat-label">待完成</view>
+        </view>
+      </view>
+
+      <view class="stat-card info">
+        <view class="stat-icon">👁️</view>
+        <view class="stat-content">
+          <view class="stat-number">{{observersCount}}</view>
+          <view class="stat-label">围观人数</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡统计 -->
+  <view class="stats-section">
+    <view class="section-header">
+      <text class="section-title">打卡统计</text>
+      <view class="time-filter">
+        <view class="filter-tab {{timeFilter === 'week' ? 'active' : ''}}" bindtap="switchTimeFilter" data-filter="week">
+          本周
+        </view>
+        <view class="filter-tab {{timeFilter === 'month' ? 'active' : ''}}" bindtap="switchTimeFilter" data-filter="month">
+          本月
+        </view>
+        <view class="filter-tab {{timeFilter === 'all' ? 'active' : ''}}" bindtap="switchTimeFilter" data-filter="all">
+          全部
+        </view>
+      </view>
+    </view>
+
+    <view class="checkin-stats">
+      <view class="chart-container">
+        <view class="chart-title">每日打卡趋势</view>
+        <view class="chart-content">
+          <!-- 模拟图表 -->
+          <view class="mock-chart">
+            <view class="chart-bars">
+              <view class="bar-item" wx:for="{{dailyStats}}" wx:key="date">
+                <view class="bar" style="height: {{item.height}}rpx; background: {{item.color}};"></view>
+                <view class="bar-label">{{item.label}}</view>
+                <view class="bar-value">{{item.count}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 打卡排行榜 -->
+    <view class="ranking-section">
+      <view class="ranking-header">
+        <text class="ranking-title">打卡排行榜</text>
+        <text class="ranking-subtitle">前10名</text>
+      </view>
+
+      <view class="ranking-list">
+        <view class="ranking-item {{item.rank <= 3 ? 'top-ranked' : ''}}" wx:for="{{topParticipants}}" wx:key="id">
+          <view class="rank-badge">
+            <text class="rank-number">{{item.rank}}</text>
+            <text class="rank-medal" wx:if="{{item.rank <= 3}}">{{item.medal}}</text>
+          </view>
+
+          <image class="user-avatar" src="{{item.avatar_url}}" mode="aspectFill"></image>
+          <view class="user-info">
+            <view class="user-name">{{item.nickname}}</view>
+            <view class="user-stats">
+              <text class="stat-text">打卡{{item.checkins_count}}次</text>
+              <text class="stat-divider">·</text>
+              <text class="stat-text">活跃度{{item.activity_score}}%</text>
+            </view>
+          </view>
+
+          <view class="achievement-badge" wx:if="{{item.streak > 0}}">
+            <text class="streak-text">连续{{item.streak}}天</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活跃度分析 -->
+  <view class="stats-section">
+    <view class="section-header">
+      <text class="section-title">活跃度分析</text>
+      <text class="section-subtitle">基于最近7天数据</text>
+    </view>
+
+    <view class="activity-analysis">
+      <view class="analysis-cards">
+        <view class="analysis-card">
+          <view class="analysis-icon">🔥</view>
+          <view class="analysis-content">
+            <view class="analysis-value">{{averageCheckins}}次</view>
+            <view class="analysis-label">日均打卡</view>
+          </view>
+        </view>
+
+        <view class="analysis-card">
+          <view class="analysis-icon">📈</view>
+          <view class="analysis-content">
+            <view class="analysis-value">{{completionRate}}%</view>
+            <view class="analysis-label">完成率</view>
+          </view>
+        </view>
+
+        <view class="analysis-card">
+          <view class="analysis-icon">💪</view>
+          <view class="analysis-content">
+            <view class="analysis-value">{{activeUsers}}人</view>
+            <view class="analysis-label">活跃用户</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="activity-heatmap">
+        <view class="heatmap-title">活跃度热力图</view>
+        <view class="heatmap-grid">
+          <view class="heatmap-cell" wx:for="{{heatmapData}}" wx:key="date"
+                style="background: {{item.color}};"
+                bindtap="showHeatmapDetail"
+                data-date="{{item.date}}">
+            <view class="cell-tooltip">{{item.count}}次打卡</view>
+          </view>
+        </view>
+        <view class="heatmap-legend">
+          <text class="legend-text">少</text>
+          <view class="legend-colors">
+            <view class="legend-color" style="background: rgba(79, 70, 229, 0.1);"></view>
+            <view class="legend-color" style="background: rgba(79, 70, 229, 0.3);"></view>
+            <view class="legend-color" style="background: rgba(79, 70, 229, 0.5);"></view>
+            <view class="legend-color" style="background: rgba(79, 70, 229, 0.7);"></view>
+            <view class="legend-color" style="background: rgba(79, 70, 229, 0.9);"></view>
+          </view>
+          <text class="legend-text">多</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && !eventInfo}}">
+    <text class="empty-emoji">📊</text>
+    <text class="empty-text">暂无统计数据</text>
+    <text class="empty-desc">活动可能尚未开始或已结束</text>
+    <button class="btn btn-primary" bindtap="goBack">返回</button>
+  </view>
+</view>

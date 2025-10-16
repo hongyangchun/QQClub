@@ -318,4 +318,194 @@ class PostManagementServiceTest < ActiveSupport::TestCase
     # 至少有一个应该成功
     assert result1.success? || result2.success?
   end
+
+  # 新功能测试 - 分类
+  test "should create post with valid category" do
+    params = {
+      title: "分类测试帖子",
+      content: "这是一个带有分类的帖子内容，确保长度满足系统要求的至少10个字符。",
+      category: "reading"
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal "reading", result.result[:post]["category"]
+  end
+
+  test "should fail to create post with invalid category" do
+    params = {
+      title: "无效分类测试",
+      content: "这是一个使用无效分类的帖子内容，确保长度足够。",
+      category: "invalid_category"
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.failure?
+    assert_includes result.error_messages, "Category is not included in the list"
+  end
+
+  test "should update post category" do
+    params = { category: "activity" }
+
+    service = PostManagementService.new(post: @post, user: @user, action: :update, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal "activity", result.result[:post]["category"]
+  end
+
+  # 新功能测试 - 图片
+  test "should create post with images" do
+    params = {
+      title: "带图片的帖子",
+      content: "这是一个包含图片的帖子内容，确保长度满足系统要求的至少10个字符。",
+      images: ["https://example.com/image1.jpg", "https://example.com/image2.png"]
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:images], result.result[:post]["images"]
+    assert_equal 2, result.result[:post]["images"].length
+  end
+
+  test "should update post with images" do
+    params = {
+      title: "更新标题",
+      content: "更新内容，确保长度满足系统要求。",
+      images: ["https://example.com/new_image.jpg"]
+    }
+
+    service = PostManagementService.new(post: @post, user: @user, action: :update, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:images], result.result[:post]["images"]
+    assert_equal 1, result.result[:post]["images"].length
+  end
+
+  test "should handle empty images array" do
+    params = {
+      title: "无图片帖子",
+      content: "这是一个没有图片的帖子内容，确保长度满足系统要求的至少10个字符。",
+      images: []
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal [], result.result[:post]["images"]
+  end
+
+  # 新功能测试 - 标签
+  test "should create post with tags" do
+    params = {
+      title: "标签测试帖子",
+      content: "这是一个包含标签的帖子内容，确保长度满足系统要求的至少10个字符。",
+      tags: ["小说", "读书", "文学"]
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:tags], result.result[:post]["tags"]
+    assert_equal 3, result.result[:post]["tags"].length
+  end
+
+  test "should update post tags" do
+    params = {
+      tags: ["科技", "创新"]
+    }
+
+    service = PostManagementService.new(post: @post, user: @user, action: :update, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:tags], result.result[:post]["tags"]
+    assert_equal 2, result.result[:post]["tags"].length
+  end
+
+  # 性能测试
+  test "should handle large images array efficiently" do
+    params = {
+      title: "多图测试",
+      content: "这是一个包含大量图片的帖子内容，确保长度满足系统要求的至少10个字符。",
+      images: Array.new(10) { |i| "https://example.com/image#{i}.jpg" }
+    }
+
+    start_time = Time.current
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    end_time = Time.current
+
+    assert result.success?
+    assert_equal 10, result.result[:post]["images"].length
+    # 应该在合理时间内完成
+    assert (end_time - start_time) < 2.seconds
+  end
+
+  # 数据完整性测试
+  test "should maintain data consistency during errors" do
+    original_title = @post.title
+    original_content = @post.content
+
+    # 尝试用无效数据更新
+    invalid_params = {
+      title: "",  # 无效
+      content: "太短",  # 无效
+      category: "invalid"  # 无效
+    }
+
+    service = PostManagementService.new(post: @post, user: @user, action: :update, post_params: invalid_params)
+    result = service.call
+
+    assert result.failure?
+
+    # 确保原始数据没有被修改
+    @post.reload
+    assert_equal original_title, @post.title
+    assert_equal original_content, @post.content
+  end
+
+  # 边界条件测试 - 特殊字符
+  test "should handle special characters in content" do
+    params = {
+      title: "特殊字符测试!@#$%^&*()",
+      content: "包含特殊字符的内容：!@#$%^&*()_+-={}[]|;:,.<>?",
+      category: "chat"
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:title], result.result[:post]["title"]
+    assert_equal params[:content], result.result[:post]["content"]
+  end
+
+  # Unicode 测试
+  test "should handle unicode content correctly" do
+    params = {
+      title: "Unicode测试 📚",
+      content: "包含Unicode的内容：中文、English、😊、🎉",
+      tags: ["中文标签", "English Tag", "😊表情"]
+    }
+
+    service = PostManagementService.new(post: nil, user: @user, action: :create, post_params: params)
+    result = service.call
+
+    assert result.success?
+    assert_equal params[:title], result.result[:post]["title"]
+    assert_equal params[:content], result.result[:post]["content"]
+    assert_equal params[:tags], result.result[:post]["tags"]
+  end
 end

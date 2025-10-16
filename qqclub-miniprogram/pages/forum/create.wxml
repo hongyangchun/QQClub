@@ -1,0 +1,162 @@
+<!--pages/forum/create.wxml-->
+<view class="container page-container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-nav">
+      <view class="nav-btn" bindtap="goBack">
+        <text class="nav-icon">←</text>
+      </view>
+      <view class="nav-title">发帖</view>
+      <view class="nav-btn" bindtap="publishPost">
+        <text class="publish-btn">发布</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发帖表单 -->
+  <view class="create-form">
+    <!-- 板块选择 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">选择板块</text>
+        <text class="title-required">*</text>
+      </view>
+      <view class="category-selector">
+        <view class="category-item {{selectedCategory === 'reading' ? 'selected' : ''}}" bindtap="selectCategory" data-category="reading">
+          <view class="category-icon">📚</view>
+          <view class="category-info">
+            <view class="category-name">读书心得</view>
+            <view class="category-desc">分享阅读感受和书籍推荐</view>
+          </view>
+        </view>
+        <view class="category-item {{selectedCategory === 'activity' ? 'selected' : ''}}" bindtap="selectCategory" data-category="activity">
+          <view class="category-icon">🎯</view>
+          <view class="category-info">
+            <view class="category-name">活动讨论</view>
+            <view class="category-desc">共读活动相关讨论</view>
+          </view>
+        </view>
+        <view class="category-item {{selectedCategory === 'chat' ? 'selected' : ''}}" bindtap="selectCategory" data-category="chat">
+          <view class="category-icon">💬</view>
+          <view class="category-info">
+            <view class="category-name">闲聊区</view>
+            <view class="category-desc">日常交流，随意聊天</view>
+          </view>
+        </view>
+        <view class="category-item {{selectedCategory === 'help' ? 'selected' : ''}}" bindtap="selectCategory" data-category="help">
+          <view class="category-icon">❓</view>
+          <view class="category-info">
+            <view class="category-name">求助问答</view>
+            <view class="category-desc">问题求助，知识问答</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 标题输入 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">帖子标题</text>
+        <text class="title-required">*</text>
+        <text class="title-count">{{title.length}}/50</text>
+      </view>
+      <view class="input-wrapper">
+        <input class="title-input" placeholder="请输入帖子标题，让更多人看到你的精彩内容" maxlength="50" bindinput="onTitleInput" value="{{title}}" />
+      </view>
+    </view>
+
+    <!-- 内容输入 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">帖子内容</text>
+        <text class="title-required">*</text>
+        <text class="title-count">{{content.length}}/1000</text>
+      </view>
+      <view class="content-wrapper">
+        <textarea class="content-input" placeholder="分享你的想法、经历或疑问..." maxlength="1000" bindinput="onContentInput" value="{{content}}" auto-height />
+      </view>
+    </view>
+
+    <!-- 图片上传 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">添加图片</text>
+        <text class="title-desc">（可选）</text>
+      </view>
+      <view class="image-upload-area">
+        <view class="uploaded-images" wx:if="{{images.length > 0}}">
+          <view class="image-item" wx:for="{{images}}" wx:key="index">
+            <image class="image-preview" src="{{item}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}"></image>
+            <view class="image-delete" bindtap="deleteImage" data-index="{{index}}">
+              <text class="delete-icon">×</text>
+            </view>
+          </view>
+        </view>
+        <view class="upload-btn" wx:if="{{images.length < 9}}" bindtap="chooseImage">
+          <view class="upload-icon">📷</view>
+          <view class="upload-text">添加图片</view>
+          <view class="upload-desc">最多9张</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 标签设置 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">添加标签</text>
+        <text class="title-desc">（可选）</text>
+      </view>
+      <view class="tag-input-area">
+        <view class="tag-input-wrapper">
+          <input class="tag-input" placeholder="输入标签后按回车添加" bindinput="onTagInput" bindconfirm="addTag" value="{{tagInput}}" />
+          <button class="add-tag-btn" bindtap="addTag">添加</button>
+        </view>
+        <view class="selected-tags" wx:if="{{tags.length > 0}}">
+          <view class="tag-item" wx:for="{{tags}}" wx:key="index">
+            <text class="tag-text">#{{item}}</text>
+            <view class="tag-delete" bindtap="deleteTag" data-index="{{index}}">
+              <text class="delete-icon">×</text>
+            </view>
+          </view>
+        </view>
+        <view class="suggested-tags">
+          <text class="suggested-title">热门标签：</text>
+          <view class="suggested-list">
+            <text class="suggested-tag" wx:for="{{suggestedTags}}" wx:key="index" bindtap="addSuggestedTag" data-tag="{{item}}">{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 发布选项 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="title-text">发布选项</text>
+      </view>
+      <view class="publish-options">
+        <view class="option-item">
+          <view class="option-info">
+            <view class="option-name">允许评论</view>
+            <view class="option-desc">其他用户可以评论你的帖子</view>
+          </view>
+          <switch class="option-switch" checked="{{allowComment}}" bindchange="onAllowCommentChange" />
+        </view>
+        <view class="option-item">
+          <view class="option-info">
+            <view class="option-name">匿名发布</view>
+            <view class="option-desc">隐藏你的身份信息</view>
+          </view>
+          <switch class="option-switch" checked="{{anonymous}}" bindchange="onAnonymousChange" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>
+
+<!-- 图片预览 -->
+<view class="image-preview-modal" wx:if="{{showImagePreview}}" bindtap="hideImagePreview">
+  <image class="preview-image" src="{{previewImageUrl}}" mode="aspectFit" bindtap="stopPropagation"></image>
+</view>

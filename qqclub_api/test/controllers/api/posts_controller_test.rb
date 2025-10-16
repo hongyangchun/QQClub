@@ -444,4 +444,326 @@ class Api::PostsControllerTest < ActionDispatch::IntegrationTest
     json_response = JSON.parse(response.body)
     assert_equal long_content.length, json_response["post"]["content"].length
   end
+
+  # Image Upload Integration Tests
+  test "should create post with images" do
+    post_params = {
+      title: "带图片的帖子",
+      content: "这是一个包含图片的帖子内容，确保长度满足系统要求的至少10个字符。",
+      images: ["https://example.com/image1.jpg", "https://example.com/image2.png"]
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal post_params[:images], json_response["post"]["images"]
+    assert_equal 2, json_response["post"]["images"].length
+  end
+
+  test "should update post with images" do
+    post = create_test_post(user: @user, title: "原标题", content: "原内容，至少10个字符。")
+    update_params = {
+      title: "更新标题",
+      content: "更新内容，确保长度满足系统要求。",
+      images: ["https://example.com/new_image.jpg"]
+    }
+
+    put api_post_path(post), params: { post: update_params }, headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_equal update_params[:images], json_response["post"]["images"]
+    assert_equal 1, json_response["post"]["images"].length
+  end
+
+  test "should handle empty images array" do
+    post_params = {
+      title: "无图片帖子",
+      content: "这是一个没有图片的帖子内容，确保长度满足系统要求的至少10个字符。",
+      images: []
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal [], json_response["post"]["images"]
+  end
+
+  # Category Tests
+  test "should create post with category" do
+    post_params = {
+      title: "分类测试帖子",
+      content: "这是一个带有分类的帖子内容，确保长度满足系统要求的至少10个字符。",
+      category: "reading"
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal "reading", json_response["post"]["category"]
+  end
+
+  test "should update post category" do
+    post = create_test_post(user: @user, title: "原标题", content: "原内容，至少10个字符。", category: nil)
+    update_params = {
+      category: "activity"
+    }
+
+    put api_post_path(post), params: { post: update_params }, headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_equal "activity", json_response["post"]["category"]
+  end
+
+  # Tags Tests
+  test "should create post with tags" do
+    post_params = {
+      title: "标签测试帖子",
+      content: "这是一个包含标签的帖子内容，确保长度满足系统要求的至少10个字符。",
+      tags: ["小说", "读书", "文学"]
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal post_params[:tags], json_response["post"]["tags"]
+    assert_equal 3, json_response["post"]["tags"].length
+  end
+
+  test "should update post tags" do
+    post = create_test_post(user: @user, title: "原标题", content: "原内容，至少10个字符。")
+    update_params = {
+      tags: ["科技", "创新"]
+    }
+
+    put api_post_path(post), params: { post: update_params }, headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_equal update_params[:tags], json_response["post"]["tags"]
+    assert_equal 2, json_response["post"]["tags"].length
+  end
+
+  # Like Count Tests
+  test "should include likes count in post response" do
+    post = create_test_post(user: @user, title: "测试帖子", content: "这是一个测试帖子，长度足够。")
+
+    get api_post_path(post), headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response.key?("likes_count")
+    assert json_response["likes_count"].is_a?(Integer)
+    assert_equal 0, json_response["likes_count"]
+  end
+
+  test "should include comments count in post response" do
+    post = create_test_post(user: @user, title: "测试帖子", content: "这是一个测试帖子，长度足够。")
+
+    get api_post_path(post), headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response.key?("comments_count")
+    assert json_response["comments_count"].is_a?(Integer)
+    assert_equal 0, json_response["comments_count"]
+  end
+
+  # Like Status Tests
+  test "should include liked_by_current_user in post response" do
+    post = create_test_post(user: @user, title: "测试帖子", content: "这是一个测试帖子，长度足够。")
+
+    get api_post_path(post), headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response.key?("liked_by_current_user")
+    assert_equal false, json_response["liked_by_current_user"]
+  end
+
+  # Views Count Tests
+  test "should include views count in post response" do
+    post = create_test_post(user: @user, title: "测试帖子", content: "这是一个测试帖子，长度足够。")
+
+    get api_post_path(post), headers: @user_headers
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert json_response.key?("views_count")
+    assert json_response["views_count"].is_a?(Integer)
+  end
+
+  # Integration Tests with Comments
+  test "should create post and then add comments" do
+    # 1. 创建帖子
+    post_params = {
+      title: "集成测试帖子",
+      content: "这是一个集成测试帖子，用于验证创建帖子后添加评论的功能，确保长度足够。"
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    create_response = JSON.parse(response.body)
+    post_id = create_response["post"]["id"]
+
+    # 2. 添加评论
+    comment_params = { comment: { content: "这是第一条评论" } }
+    post "/api/posts/#{post_id}/comments", params: comment_params, headers: @user_headers
+    assert_response :created
+
+    # 3. 验证评论数更新
+    get api_post_path(post_id), headers: @user_headers
+    assert_response :success
+
+    show_response = JSON.parse(response.body)
+    assert_equal 1, show_response["comments_count"]
+  end
+
+  # Integration Tests with Likes
+  test "should create post and then like it" do
+    # 1. 创建帖子
+    post_params = {
+      title: "点赞集成测试帖子",
+      content: "这是一个点赞集成测试帖子，用于验证创建帖子后点赞的功能，确保长度足够。"
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    create_response = JSON.parse(response.body)
+    post_id = create_response["post"]["id"]
+
+    # 2. 点赞帖子
+    post "/api/posts/#{post_id}/like", headers: @other_user_headers
+    assert_response :success
+
+    # 3. 验证点赞数更新
+    get api_post_path(post_id), headers: @user_headers
+    assert_response :success
+
+    show_response = JSON.parse(response.body)
+    assert_equal 1, show_response["likes_count"]
+  end
+
+  # Search and Filter Tests
+  test "should filter posts by category" do
+    reading_post = create_test_post(user: @user, title: "读书帖子", content: "读书内容", category: "reading")
+    activity_post = create_test_post(user: @other_user, title: "活动帖子", content: "活动内容", category: "activity")
+
+    get api_posts_path, params: { category: "reading" }, headers: @user_headers
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_equal 1, json_response.length
+    assert_equal reading_post.id, json_response[0]["id"]
+    assert_equal "reading", json_response[0]["category"]
+  end
+
+  test "should search posts by keyword" do
+    search_post = create_test_post(user: @user, title: "搜索测试标题", content: "包含搜索关键词的内容")
+    other_post = create_test_post(user: @other_user, title: "其他标题", content: "其他内容")
+
+    get api_posts_path, params: { keyword: "搜索" }, headers: @user_headers
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_equal 1, json_response.length
+    assert_equal search_post.id, json_response[0]["id"]
+  end
+
+  # Performance Tests
+  test "should handle multiple image uploads efficiently" do
+    post_params = {
+      title: "多图测试帖子",
+      content: "这是一个包含多张图片的帖子内容，确保长度足够。",
+      images: Array.new(5) { |i| "https://example.com/image#{i}.jpg" }
+    }
+
+    start_time = Time.current
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    end_time = Time.current
+
+    # 应该在合理时间内完成
+    assert (end_time - start_time) < 5.seconds
+
+    json_response = JSON.parse(response.body)
+    assert_equal 5, json_response["post"]["images"].length
+  end
+
+  # Edge Cases Tests
+  test "should handle post with maximum allowed content length" do
+    max_content = "a" * 5000
+    post_params = {
+      title: "最大长度测试",
+      content: max_content
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal max_content, json_response["post"]["content"]
+  end
+
+  test "should handle post with minimum allowed content length" do
+    min_content = "a" * 10
+    post_params = {
+      title: "最小长度测试",
+      content: min_content
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal min_content, json_response["post"]["content"]
+  end
+
+  test "should handle post with special characters" do
+    post_params = {
+      title: "特殊字符测试!@#$%^&*()",
+      content: "包含特殊字符的内容：!@#$%^&*()_+-={}[]|;:,.<>?"
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal post_params[:title], json_response["post"]["title"]
+    assert_equal post_params[:content], json_response["post"]["content"]
+  end
+
+  test "should handle post with unicode content" do
+    post_params = {
+      title: "Unicode测试 📚",
+      content: "包含Unicode的内容：中文、English、😊、🎉"
+    }
+
+    post api_posts_path, params: { post: post_params }, headers: @user_headers
+    assert_response :created
+
+    json_response = JSON.parse(response.body)
+    assert_equal post_params[:title], json_response["post"]["title"]
+    assert_equal post_params[:content], json_response["post"]["content"]
+  end
 end

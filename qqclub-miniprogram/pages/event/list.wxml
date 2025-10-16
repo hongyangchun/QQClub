@@ -1,112 +1,123 @@
 <!--pages/event/list.wxml-->
 <view class="container page-container">
-  <!-- 筛选栏 -->
-  <view class="filter-bar">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <view class="header-title">
+        <text class="title-icon">📚</text>
+        <text>共读区</text>
+      </view>
+      <view class="header-actions">
+        <button class="create-btn" bindtap="goToCreateEvent">
+          <text class="btn-icon">✏️</text>
+          <text class="btn-text">创建共读</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 状态筛选 -->
+  <view class="filter-section">
     <view class="filter-tabs">
       <view
         class="filter-tab {{currentFilter === 'all' ? 'active' : ''}}"
         bindtap="changeFilter"
         data-filter="all"
       >
-        全部
+        <text class="tab-text">全部</text>
+        <view class="tab-indicator" wx:if="{{currentFilter === 'all'}}"></view>
       </view>
       <view
         class="filter-tab {{currentFilter === 'enrolling' ? 'active' : ''}}"
         bindtap="changeFilter"
         data-filter="enrolling"
       >
-        报名中
+        <text class="tab-text">报名中</text>
+        <view class="tab-badge" wx:if="{{enrollingCount > 0}}">{{enrollingCount}}</view>
+        <view class="tab-indicator" wx:if="{{currentFilter === 'enrolling'}}"></view>
       </view>
       <view
         class="filter-tab {{currentFilter === 'in_progress' ? 'active' : ''}}"
         bindtap="changeFilter"
         data-filter="in_progress"
       >
-        进行中
+        <text class="tab-text">进行中</text>
+        <view class="tab-indicator" wx:if="{{currentFilter === 'in_progress'}}"></view>
       </view>
-      <view
-        class="filter-tab {{currentFilter === 'completed' ? 'active' : ''}}"
-        bindtap="changeFilter"
-        data-filter="completed"
-      >
-        已完成
-      </view>
-    </view>
-    <view class="filter-sort" bindtap="showSortMenu">
-      <text class="sort-text">{{sortText}}</text>
-      <text class="sort-arrow">▼</text>
     </view>
   </view>
 
   <!-- 活动列表 -->
-  <view class="event-list" wx:if="{{events.length > 0}}">
-    <view
-      class="event-item card"
-      wx:for="{{events}}"
-      wx:key="id"
-      bindtap="goToEventDetail"
-      data-id="{{item.id}}"
-    >
-      <view class="card-body">
-        <!-- 活动状态标签 -->
-        <view class="event-status mb-2">
-          <text class="tag {{item.approval_status === 'approved' ? 'tag-success' : item.approval_status === 'rejected' ? 'tag-error' : 'tag-secondary'}}">
-            {{item.approval_status_text}}
-          </text>
-          <text class="tag tag-primary">{{item.status_text}}</text>
+  <view class="events-container" wx:if="{{events.length > 0}}">
+    <view class="events-list">
+      <view
+        class="event-card"
+        wx:for="{{events}}"
+        wx:key="id"
+        bindtap="goToEventDetail"
+        data-id="{{item.id}}"
+      >
+        <!-- 活动头部 -->
+        <view class="event-header">
+          <view class="event-title">{{item.title}}</view>
+          <view class="event-status status-{{item.status}}">{{item.status_text}}</view>
         </view>
 
-        <!-- 活动标题和书籍 -->
-        <view class="event-title text-medium mb-2">{{item.title}}</view>
-        <view class="event-book text-small text-secondary mb-3">
-          <text class="book-icon">📖</text>
-          <text>{{item.book_name}}</text>
-        </view>
+        <!-- 活动内容 -->
+        <view class="event-body">
+          <view class="event-book">
+            <text class="book-icon">📖</text>
+            <text class="book-name">{{item.book_name}}</text>
+          </view>
 
-        <!-- 活动信息 -->
-        <view class="event-info-grid mb-3">
-          <view class="info-item">
-            <text class="info-icon">📅</text>
-            <text class="info-text">{{item.date_range}}</text>
-          </view>
-          <view class="info-item">
-            <text class="info-icon">👥</text>
-            <text class="info-text">{{item.participants_count}}/{{item.max_participants}}人</text>
-          </view>
-          <view class="info-item">
-            <text class="info-icon">💰</text>
-            <text class="info-text">￥{{item.enrollment_fee}}</text>
-          </view>
-          <view class="info-item">
-            <text class="info-icon">📆</text>
-            <text class="info-text">{{item.days_count}}天</text>
+          <view class="event-info">
+            <view class="info-item">
+              <text class="info-icon">👤</text>
+              <text class="info-text">{{item.leader_name}}</text>
+            </view>
+            <view class="info-item">
+              <text class="info-icon">📅</text>
+              <text class="info-text">{{item.date_range}}</text>
+            </view>
+            <view class="info-item">
+              <text class="info-icon">👥</text>
+              <text class="info-text">{{item.participants_count}}人参与</text>
+            </view>
           </view>
         </view>
 
-        <!-- 活动描述 -->
-        <view class="event-desc text-small text-secondary mb-3" wx:if="{{item.description}}">
-          <text class="desc-text">{{item.description_preview}}</text>
-        </view>
-
-        <!-- 活动组织者 -->
-        <view class="event-leader flex items-center text-small text-hint">
-          <image class="avatar avatar-small mr-2" src="{{item.leader.avatar_url}}" mode="aspectFill"></image>
-          <text>组织者：{{item.leader.nickname}}</text>
-        </view>
-
-        <!-- 活动操作按钮 -->
-        <view class="event-actions mt-3" wx:if="{{item.can_enroll || item.is_participant}}">
+        <!-- 活动操作 -->
+        <view class="event-actions">
           <button
-            class="btn btn-primary btn-small"
-            bindtap="enrollEvent"
+            class="action-btn join-btn"
+            bindtap="joinEvent"
             data-id="{{item.id}}"
             catch:tap="true"
-            wx:if="{{item.can_enroll}}"
+            wx:if="{{item.can_join}}"
           >
-            立即报名
+            <text class="btn-icon">🟢</text>
+            <text class="btn-text">加入共读</text>
           </button>
-          <view class="btn btn-success btn-small" wx:if="{{item.is_participant}}">
-            已报名
+
+          <button
+            class="action-btn observe-btn"
+            bindtap="observeEvent"
+            data-id="{{item.id}}"
+            catch:tap="true"
+            wx:if="{{item.can_observe}}"
+          >
+            <text class="btn-icon">👁️</text>
+            <text class="btn-text">围观共读</text>
+          </button>
+
+          <view class="action-btn joined-btn" wx:if="{{item.is_participant}}">
+            <text class="btn-icon">✅</text>
+            <text class="btn-text">已加入</text>
+          </view>
+
+          <view class="action-btn observing-btn" wx:if="{{item.is_observer}}">
+            <text class="btn-icon">👁️</text>
+            <text class="btn-text">围观中</text>
           </view>
         </view>
       </view>
@@ -114,75 +125,35 @@
   </view>
 
   <!-- 空状态 -->
-  <view class="empty" wx:if="{{!loading && events.length === 0}}">
-    <view class="empty-icon">📚</view>
-    <view class="empty-text">暂无活动</view>
-    <view class="empty-desc">还没有相关活动，快来创建一个吧！</view>
-    <button class="btn btn-primary mt-4" bindtap="goToCreateEvent">创建活动</button>
+  <view class="empty-state" wx:if="{{!loading && events.length === 0}}">
+    <view class="empty-illustration">
+      <text class="empty-emoji">📚</text>
+    </view>
+    <view class="empty-title">暂无共读活动</view>
+    <view class="empty-desc">快来创建第一个共读活动吧！</view>
+    <button class="btn btn-primary" bindtap="goToCreateEvent">
+      <text>创建共读活动</text>
+      <text class="btn-arrow">→</text>
+    </button>
   </view>
 
   <!-- 加载状态 -->
-  <view class="loading" wx:if="{{loading}}">
+  <view class="loading-overlay" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
-    <text>加载中...</text>
+    <text class="loading-text">精彩活动加载中...</text>
   </view>
 
   <!-- 加载更多 -->
-  <view class="load-more" wx:if="{{hasMore && !loading}}">
-    <button class="btn btn-outline btn-block" bindtap="loadMore">加载更多</button>
+  <view class="load-more-section" wx:if="{{hasMore && !loading}}">
+    <button class="load-more-btn" bindtap="loadMore">
+      <text class="load-text">加载更多</text>
+      <text class="load-icon">↓</text>
+    </button>
   </view>
 
   <!-- 没有更多 -->
-  <view class="no-more" wx:if="{{!hasMore && events.length > 0}}">
-    <text class="text-small text-hint">没有更多活动了</text>
+  <view class="end-reached" wx:if="{{!hasMore && events.length > 0}}">
+    <view class="end-line"></view>
+    <text class="end-text">已经到底了</text>
   </view>
-</view>
-
-<!-- 排序菜单 -->
-<view class="sort-modal" wx:if="{{showSortModal}}" bindtap="hideSortMenu">
-  <view class="sort-content" catchtap="stopPropagation">
-    <view class="sort-header">
-      <view class="sort-title">排序方式</view>
-      <view class="sort-close" bindtap="hideSortMenu">×</view>
-    </view>
-    <view class="sort-options">
-      <view
-        class="sort-option {{currentSort === 'created_at_desc' ? 'active' : ''}}"
-        bindtap="changeSort"
-        data-sort="created_at_desc"
-      >
-        <text>最新创建</text>
-        <text class="check" wx:if="{{currentSort === 'created_at_desc'}}">✓</text>
-      </view>
-      <view
-        class="sort-option {{currentSort === 'start_date_asc' ? 'active' : ''}}"
-        bindtap="changeSort"
-        data-sort="start_date_asc"
-      >
-        <text>开始时间</text>
-        <text class="check" wx:if="{{currentSort === 'start_date_asc'}}">✓</text>
-      </view>
-      <view
-        class="sort-option {{currentSort === 'participants_desc' ? 'active' : ''}}"
-        bindtap="changeSort"
-        data-sort="participants_desc"
-      >
-        <text>参与人数</text>
-        <text class="check" wx:if="{{currentSort === 'participants_desc'}}">✓</text>
-      </view>
-      <view
-        class="sort-option {{currentSort === 'enrollment_fee_asc' ? 'active' : ''}}"
-        bindtap="changeSort"
-        data-sort="enrollment_fee_asc"
-      >
-        <text>费用最低</text>
-        <text class="check" wx:if="{{currentSort === 'enrollment_fee_asc'}}">✓</text>
-      </view>
-    </view>
-  </view>
-</view>
-
-<!-- 浮动创建按钮 -->
-<view class="fab" bindtap="goToCreateEvent" wx:if="{{userInfo}}">
-  <text>+</text>
 </view>

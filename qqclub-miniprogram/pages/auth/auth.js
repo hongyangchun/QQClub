@@ -6,15 +6,10 @@ const util = require('../../utils/util')
 Page({
   data: {
     // 表单数据
-    phoneNumber: '',
-    verifyCode: '',
     agreed: false,
 
     // 加载状态
     wechatLoading: false,
-    phoneLoading: false,
-    codeSending: false,
-    countdown: 0,
 
     // 协议弹窗
     showAgreementModal: false,
@@ -37,21 +32,23 @@ Page({
     this.setData({ wechatLoading: true })
 
     try {
-      const response = await api.auth.mockLogin({
-        openid: 'test_dhh_001',
-        nickname: 'DHH',
-        avatar_url: 'https://example.com/avatar.jpg'
-      })
-
-      // 后端直接返回数据，不需要检查 success 字段
-      if (response.token && response.user) {
-        await this.handleLoginSuccess(response)
-      } else {
-        app.showToast('登录失败，请重试')
+      // 直接模拟登录成功，用于开发测试
+      const mockResponse = {
+        token: 'mock_token_' + Date.now(),
+        user: {
+          id: 1,
+          openid: 'test_dhh_001',
+          nickname: 'DHH',
+          avatar_url: 'https://picsum.photos/100/100?random=dhh',
+          role: 'user',
+          created_at: new Date().toISOString()
+        }
       }
+
+      await this.handleLoginSuccess(mockResponse)
     } catch (error) {
       console.error('模拟登录失败:', error)
-      app.showToast('网络错误，请重试')
+      app.showToast('登录失败，请重试')
     } finally {
       this.setData({ wechatLoading: false })
     }
@@ -99,98 +96,7 @@ Page({
     }
   },
 
-  // 手机号登录
-  async phoneLogin() {
-    if (!this.checkAgreement()) return
-
-    const { phoneNumber, verifyCode } = this.data
-
-    // 表单验证
-    if (!util.isValidPhone(phoneNumber)) {
-      app.showToast('请输入正确的手机号')
-      return
-    }
-
-    if (!verifyCode || verifyCode.length !== 6) {
-      app.showToast('请输入6位验证码')
-      return
-    }
-
-    this.setData({ phoneLoading: true })
-
-    try {
-      // 这里应该调用手机号登录API
-      // const response = await api.auth.phoneLogin({
-      //   phone: phoneNumber,
-      //   code: verifyCode
-      // })
-
-      // 模拟登录成功
-      const mockResponse = {
-        success: true,
-        data: {
-          token: 'mock_token_' + Date.now(),
-          user: {
-            id: 1,
-            nickname: '用户' + phoneNumber.slice(-4),
-            phone: phoneNumber,
-            avatar_url: 'https://example.com/avatar.jpg'
-          }
-        }
-      }
-
-      await this.handleLoginSuccess(mockResponse.data)
-    } catch (error) {
-      console.error('手机号登录失败:', error)
-      app.showToast('登录失败，请重试')
-    } finally {
-      this.setData({ phoneLoading: false })
-    }
-  },
-
-  // 发送验证码
-  async sendVerifyCode() {
-    const { phoneNumber } = this.data
-
-    if (!util.isValidPhone(phoneNumber)) {
-      app.showToast('请输入正确的手机号')
-      return
-    }
-
-    this.setData({ codeSending: true })
-
-    try {
-      // 这里应该调用发送验证码API
-      // await api.auth.sendVerifyCode(phoneNumber)
-
-      // 模拟发送成功
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      app.showToast('验证码已发送')
-      this.startCountdown()
-    } catch (error) {
-      console.error('发送验证码失败:', error)
-      app.showToast('发送失败，请重试')
-    } finally {
-      this.setData({ codeSending: false })
-    }
-  },
-
-  // 开始倒计时
-  startCountdown() {
-    let countdown = 60
-    this.setData({ countdown })
-
-    const timer = setInterval(() => {
-      countdown--
-      this.setData({ countdown })
-
-      if (countdown <= 0) {
-        clearInterval(timer)
-      }
-    }, 1000)
-  },
-
+  
   // 处理登录成功
   async handleLoginSuccess(data) {
     const { token, user } = data
@@ -239,13 +145,13 @@ Page({
     this.setData({
       showAgreementModal: true,
       agreementTitle: '用户协议',
-      agreementContent: `QQ读书会用户协议
+      agreementContent: `恰恰读书会用户协议
 
 1. 服务条款的接受
-欢迎使用QQ读书会服务。本协议是您与QQ读书会之间关于使用本服务的法律协议。
+欢迎使用恰恰读书会服务。本协议是您与恰恰读书会之间关于使用本服务的法律协议。
 
 2. 服务内容
-QQ读书会是一个基于微信的读书社群平台，为用户提供读书活动组织、打卡分享、社群交流等功能。
+恰恰读书会是一个基于微信的读书社群平台，为用户提供读书活动组织、打卡分享、社群交流等功能。
 
 3. 用户义务
 用户在使用本服务时必须遵守相关法律法规，不得发布违法信息，不得侵犯他人权益。
@@ -274,14 +180,13 @@ QQ读书会是一个基于微信的读书社群平台，为用户提供读书活
     this.setData({
       showAgreementModal: true,
       agreementTitle: '隐私政策',
-      agreementContent: `QQ读书会隐私政策
+      agreementContent: `恰恰读书会隐私政策
 
 我们重视您的隐私保护。本政策说明了我们如何收集、使用、存储和保护您的个人信息。
 
 1. 信息收集
 我们可能收集的信息包括：
 - 微信基本信息（昵称、头像等）
-- 手机号码（用于账号验证）
 - 设备信息（用于优化服务体验）
 - 使用行为数据（用于改进服务）
 
@@ -331,16 +236,4 @@ QQ读书会是一个基于微信的读书社群平台，为用户提供读书活
     })
   },
 
-  // 输入事件处理
-  onPhoneNumberInput(e) {
-    this.setData({
-      phoneNumber: e.detail.value
-    })
-  },
-
-  onVerifyCodeInput(e) {
-    this.setData({
-      verifyCode: e.detail.value
-    })
-  }
-})
+  })
