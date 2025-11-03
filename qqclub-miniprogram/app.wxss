@@ -40,7 +40,16 @@ page {
 }
 
 .page-container {
-  padding-bottom: 100rpx;
+  padding-bottom: 100rpx; /* 为自定义TabBar留出空间 */
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 安全区域适配 */
+@supports (bottom: env(safe-area-inset-bottom)) {
+  .page-container {
+    padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
+  }
 }
 
 /* 卡片样式 */

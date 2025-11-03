@@ -206,11 +206,17 @@ class ApiService {
     })
   }
 
-  // 处理验证错误
+  // 处理验证错误 (v2.0 标准化响应支持)
   handleValidationError(data) {
     if (data.errors && Array.isArray(data.errors)) {
       wx.showToast({
         title: data.errors[0],
+        icon: 'error'
+      })
+    } else if (data.success === false) {
+      // v2.0 API标准化响应格式
+      wx.showToast({
+        title: data.error || '操作失败',
         icon: 'error'
       })
     } else {
@@ -313,6 +319,60 @@ export const postService = {
     return api.request({
       url: `/api/posts/${postId}/comments`,
       method: 'GET'
+    })
+  },
+
+  // 更新评论 (v2.0 新增)
+  async updateComment(commentId, content) {
+    return api.request({
+      url: `/api/comments/${commentId}`,
+      method: 'PUT',
+      data: { comment: { content } }
+    })
+  },
+
+  // 删除评论 (v2.0 新增)
+  async deleteComment(commentId) {
+    return api.request({
+      url: `/api/comments/${commentId}`,
+      method: 'DELETE'
+    })
+  }
+}
+
+// 打卡评论服务 (v2.0 新增)
+export const checkInCommentService = {
+  // 获取打卡评论列表
+  async getComments(checkInId) {
+    return api.request({
+      url: `/api/check_ins/${checkInId}/comments`,
+      method: 'GET'
+    })
+  },
+
+  // 添加打卡评论
+  async addComment(checkInId, content) {
+    return api.request({
+      url: `/api/check_ins/${checkInId}/comments`,
+      method: 'POST',
+      data: { comment: { content } }
+    })
+  },
+
+  // 更新打卡评论
+  async updateComment(commentId, content) {
+    return api.request({
+      url: `/api/comments/${commentId}`,
+      method: 'PUT',
+      data: { comment: { content } }
+    })
+  },
+
+  // 删除打卡评论
+  async deleteComment(commentId) {
+    return api.request({
+      url: `/api/comments/${commentId}`,
+      method: 'DELETE'
     })
   }
 }
@@ -1257,6 +1317,622 @@ App({
     wx.hideLoading()
   }
 })
+```
+
+---
+
+## 💬 评论系统实现 (v2.0 新增)
+
+### 评论组件设计
+
+#### 评论列表组件
+```javascript
+// components/comment-list/comment-list.js
+Component({
+  properties: {
+    comments: {
+      type: Array,
+      value: []
+    },
+    targetId: {
+      type: String,
+      value: ''
+    },
+    targetType: {
+      type: String,
+      value: 'post' // 'post' 或 'check_in'
+    },
+    readonly: {
+      type: Boolean,
+      value: false
+    }
+  },
+
+  data: {
+    showEditModal: false,
+    editingComment: null,
+    editContent: ''
+  },
+
+  methods: {
+    // 点赞评论
+    onLikeComment(e) {
+      const { comment } = e.currentTarget.dataset
+      this.triggerEvent('like', { comment })
+    },
+
+    // 编辑评论
+    onEditComment(e) {
+      const { comment } = e.currentTarget.dataset
+      if (comment.can_edit_current_user) {
+        this.setData({
+          showEditModal: true,
+          editingComment: comment,
+          editContent: comment.content
+        })
+      }
+    },
+
+    // 删除评论
+    onDeleteComment(e) {
+      const { comment } = e.currentTarget.dataset
+      wx.showModal({
+        title: '确认删除',
+        content: '确定要删除这条评论吗？',
+        success: (res) => {
+          if (res.confirm) {
+            this.triggerEvent('delete', { comment })
+          }
+        }
+      })
+    },
+
+    // 提交编辑
+    onSubmitEdit() {
+      const { editingComment, editContent } = this.data
+      if (editContent.trim().length < 2) {
+        wx.showToast({
+          title: '评论内容至少2个字符',
+          icon: 'error'
+        })
+        return
+      }
+
+      this.triggerEvent('update', {
+        comment: editingComment,
+        content: editContent.trim()
+      })
+
+      this.setData({
+        showEditModal: false,
+        editingComment: null,
+        editContent: ''
+      })
+    },
+
+    // 取消编辑
+    onCancelEdit() {
+      this.setData({
+        showEditModal: false,
+        editingComment: null,
+        editContent: ''
+      })
+    },
+
+    // 格式化时间
+    formatTimeAgo(timeString) {
+      const time = new Date(timeString)
+      const now = new Date()
+      const diff = now - time
+
+      const minutes = Math.floor(diff / 60000)
+      const hours = Math.floor(diff / 3600000)
+      const days = Math.floor(diff / 86400000)
+
+      if (days > 0) return `${days}天前`
+      if (hours > 0) return `${hours}小时前`
+      if (minutes > 0) return `${minutes}分钟前`
+      return '刚刚'
+    }
+  }
+})
+```
+
+#### 评论输入组件
+```javascript
+// components/comment-input/comment-input.js
+Component({
+  properties: {
+    placeholder: {
+      type: String,
+      value: '写下你的评论...'
+    },
+    disabled: {
+      type: Boolean,
+      value: false
+    }
+  },
+
+  data: {
+    content: '',
+    inputFocus: false
+  },
+
+  methods: {
+    // 输入内容变化
+    onInputChange(e) {
+      this.setData({
+        content: e.detail.value
+      })
+    },
+
+    // 获得焦点
+    onInputFocus() {
+      this.setData({
+        inputFocus: true
+      })
+    },
+
+    // 失去焦点
+    onInputBlur() {
+      this.setData({
+        inputFocus: false
+      })
+    },
+
+    // 提交评论
+    onSubmitComment() {
+      const content = this.data.content.trim()
+      if (content.length < 2) {
+        wx.showToast({
+          title: '评论内容至少2个字符',
+          icon: 'error'
+        })
+        return
+      }
+
+      if (content.length > 1000) {
+        wx.showToast({
+          title: '评论内容不能超过1000字符',
+          icon: 'error'
+        })
+        return
+      }
+
+      this.triggerEvent('submit', { content })
+
+      // 清空输入
+      this.setData({
+        content: ''
+      })
+    }
+  }
+})
+```
+
+### 页面集成示例
+
+#### 帖子详情页评论集成
+```javascript
+// pages/post/detail.js
+import { postService } from '../../services/post'
+
+Page({
+  data: {
+    post: null,
+    comments: [],
+    loading: false,
+    hasMore: true,
+    currentPage: 1
+  },
+
+  onLoad(options) {
+    const { id } = options
+    this.postId = id
+    this.loadPostDetail()
+    this.loadComments()
+  },
+
+  // 加载帖子详情
+  async loadPostDetail() {
+    try {
+      const post = await postService.getPost(this.postId)
+      this.setData({ post })
+    } catch (error) {
+      console.error('加载帖子失败:', error)
+    }
+  },
+
+  // 加载评论列表
+  async loadComments() {
+    if (this.data.loading || !this.data.hasMore) return
+
+    this.setData({ loading: true })
+
+    try {
+      const response = await postService.getComments(this.postId)
+      const comments = response.data || response // 兼容v2.0标准化响应
+
+      this.setData({
+        comments: this.data.currentPage === 1 ? comments : [...this.data.comments, ...comments],
+        hasMore: comments.length === 10,
+        loading: false
+      })
+    } catch (error) {
+      this.setData({ loading: false })
+      console.error('加载评论失败:', error)
+    }
+  },
+
+  // 提交评论
+  async onSubmitComment(e) {
+    const { content } = e.detail
+
+    try {
+      const response = await postService.addComment(this.postId, content)
+      const newComment = response.data || response.comment // 兼容v2.0响应格式
+
+      // 添加到评论列表开头
+      this.setData({
+        comments: [newComment, ...this.data.comments]
+      })
+
+      wx.showToast({
+        title: '评论成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('评论失败:', error)
+    }
+  },
+
+  // 更新评论
+  async onUpdateComment(e) {
+    const { comment, content } = e.detail
+
+    try {
+      await postService.updateComment(comment.id, content)
+
+      // 更新本地评论
+      const comments = this.data.comments.map(c =>
+        c.id === comment.id ? { ...c, content } : c
+      )
+      this.setData({ comments })
+
+      wx.showToast({
+        title: '更新成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('更新评论失败:', error)
+    }
+  },
+
+  // 删除评论
+  async onDeleteComment(e) {
+    const { comment } = e.detail
+
+    try {
+      await postService.deleteComment(comment.id)
+
+      // 从本地列表移除
+      const comments = this.data.comments.filter(c => c.id !== comment.id)
+      this.setData({ comments })
+
+      wx.showToast({
+        title: '删除成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('删除评论失败:', error)
+    }
+  },
+
+  // 点赞帖子
+  async onLikePost() {
+    try {
+      const response = this.data.post.liked_by_current_user
+        ? await postService.unlikePost(this.postId)
+        : await postService.likePost(this.postId)
+
+      // 更新帖子状态
+      this.setData({
+        'post.liked_by_current_user': !this.data.post.liked_by_current_user,
+        'post.likes_count': response.likes_count || (this.data.post.likes_count + (this.data.post.liked_by_current_user ? -1 : 1))
+      })
+    } catch (error) {
+      console.error('点赞失败:', error)
+    }
+  }
+})
+```
+
+#### 打卡评论集成
+```javascript
+// pages/event/detail.js (打卡页面)
+import { checkInCommentService } from '../../services/post'
+
+Page({
+  data: {
+    checkIns: [],
+    selectedCheckIn: null,
+    showCommentModal: false
+  },
+
+  // 显示打卡评论
+  onShowComments(e) {
+    const { checkIn } = e.currentTarget.dataset
+    this.setData({
+      selectedCheckIn: checkIn,
+      showCommentModal: true
+    })
+    this.loadCheckInComments(checkIn.id)
+  },
+
+  // 加载打卡评论
+  async loadCheckInComments(checkInId) {
+    try {
+      const response = await checkInCommentService.getComments(checkInId)
+      const comments = response.data || response
+
+      this.setData({
+        [`checkIns[${this.findCheckInIndex(checkInId)}].comments`]: comments
+      })
+    } catch (error) {
+      console.error('加载打卡评论失败:', error)
+    }
+  },
+
+  // 提交打卡评论
+  async onSubmitCheckInComment(e) {
+    const { content } = e.detail
+    const { selectedCheckIn } = this.data
+
+    try {
+      const response = await checkInCommentService.addComment(selectedCheckIn.id, content)
+      const newComment = response.data || response
+
+      // 添加到评论列表
+      const checkInIndex = this.findCheckInIndex(selectedCheckIn.id)
+      const checkIns = [...this.data.checkIns]
+      const currentComments = checkIns[checkInIndex].comments || []
+      checkIns[checkInIndex].comments = [newComment, ...currentComments]
+
+      this.setData({ checkIns })
+
+      wx.showToast({
+        title: '评论成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('评论失败:', error)
+    }
+  },
+
+  // 查找打卡索引
+  findCheckInIndex(checkInId) {
+    return this.data.checkIns.findIndex(checkIn => checkIn.id === checkInId)
+  },
+
+  // 关闭评论模态框
+  onCloseCommentModal() {
+    this.setData({
+      showCommentModal: false,
+      selectedCheckIn: null
+    })
+  }
+})
+```
+
+### 评论组件模板
+
+#### 评论列表模板
+```xml
+<!-- components/comment-list/comment-list.wxml -->
+<view class="comment-list">
+  <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+    <!-- 用户头像和信息 -->
+    <view class="comment-header">
+      <image
+        class="user-avatar"
+        src="{{item.author_info.avatar_url || '/images/default-avatar.png'}}"
+        mode="aspectFill"
+      />
+      <view class="user-info">
+        <view class="user-name">{{item.author_info.nickname}}</view>
+        <view class="comment-time">{{formatTimeAgo(item.created_at)}}</view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="comment-actions" wx:if="{{!readonly && item.can_edit_current_user}}">
+        <text class="action-btn edit" bindtap="onEditComment" data-comment="{{item}}">编辑</text>
+        <text class="action-btn delete" bindtap="onDeleteComment" data-comment="{{item}}">删除</text>
+      </view>
+    </view>
+
+    <!-- 评论内容 -->
+    <view class="comment-content">{{item.content}}</view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-comments" wx:if="{{comments.length === 0}}">
+    <text>暂无评论，快来发表第一条评论吧~</text>
+  </view>
+</view>
+
+<!-- 编辑评论模态框 -->
+<view class="modal-mask" wx:if="{{showEditModal}}" bindtap="onCancelEdit">
+  <view class="edit-modal" catchtap="">
+    <view class="modal-header">
+      <text>编辑评论</text>
+      <text class="close-btn" bindtap="onCancelEdit">×</text>
+    </view>
+    <textarea
+      class="edit-textarea"
+      placeholder="请输入评论内容..."
+      value="{{editContent}}"
+      bindinput="onEditInputChange"
+      maxlength="1000"
+      auto-focus
+    />
+    <view class="modal-footer">
+      <button class="cancel-btn" bindtap="onCancelEdit">取消</button>
+      <button class="submit-btn" bindtap="onSubmitEdit">确认</button>
+    </view>
+  </view>
+</view>
+```
+
+### 评论组件样式
+```css
+/* components/comment-list/comment-list.wxss */
+.comment-list {
+  padding: var(--spacing-base);
+}
+
+.comment-item {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-base);
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.comment-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.user-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  margin-right: var(--spacing-sm);
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.comment-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 4rpx;
+}
+
+.comment-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.action-btn {
+  font-size: var(--font-size-xs);
+  padding: 8rpx 16rpx;
+  border-radius: var(--border-radius-sm);
+}
+
+.action-btn.edit {
+  color: var(--primary-color);
+  background-color: var(--bg-accent);
+}
+
+.action-btn.delete {
+  color: var(--error-color);
+  background-color: #ffebee;
+}
+
+.comment-content {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-left: 80rpx;
+}
+
+.empty-comments {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* 编辑模态框样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.edit-modal {
+  width: 600rpx;
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-base);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+.close-btn {
+  font-size: 48rpx;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: var(--spacing-base);
+  border: 2rpx solid #e0e0e0;
+  border-radius: var(--border-radius-base);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-base);
+  margin-top: var(--spacing-lg);
+}
+
+.cancel-btn, .submit-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-base);
+  font-size: var(--font-size-base);
+}
+
+.cancel-btn {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.submit-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
 ```
 
 ---

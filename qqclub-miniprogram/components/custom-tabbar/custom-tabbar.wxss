@@ -1,0 +1,136 @@
+/* components/custom-tabbar/custom-tabbar.wxss */
+
+.custom-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #ffffff;
+  box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.tabbar-container {
+  display: flex;
+  align-items: center;
+  height: 100rpx;
+  background: #ffffff;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 0;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 100rpx;
+}
+
+.tab-item.active {
+  /* 激活状态的背景效果 */
+  background: linear-gradient(180deg, rgba(79, 70, 229, 0.05) 0%, transparent 100%);
+}
+
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 6rpx;
+  background: #4F46E5;
+  border-radius: 0 0 6rpx 6rpx;
+}
+
+.tab-icon {
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-text {
+  font-size: 32rpx;
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+
+.tab-item.active .icon-text {
+  transform: scale(1.1);
+}
+
+.tab-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #666666;
+  line-height: 1;
+  transition: all 0.3s ease;
+  letter-spacing: 1rpx;
+}
+
+.tab-item.active .tab-text {
+  color: #4F46E5;
+  font-weight: 700;
+}
+
+/* 点击效果 */
+.tab-item:active {
+  transform: scale(0.95);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+/* 安全区域适配 */
+.safe-area-bottom {
+  height: constant(safe-area-inset-bottom);
+  height: env(safe-area-inset-bottom);
+  background: #ffffff;
+}
+
+/* 适配不同屏幕 */
+@media (min-width: 750rpx) {
+  .tab-text {
+    font-size: 30rpx;
+  }
+
+  .icon-text {
+    font-size: 36rpx;
+  }
+
+  .tabbar-container {
+    height: 110rpx;
+  }
+
+  .tab-item {
+    min-height: 110rpx;
+    padding: 16rpx 0;
+  }
+}
+
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .custom-tabbar {
+    background: #1a1a1a;
+  }
+
+  .tabbar-container {
+    background: #1a1a1a;
+    border-top-color: #333333;
+  }
+
+  .tab-text {
+    color: #999999;
+  }
+
+  .tab-item.active .tab-text {
+    color: #6366f1;
+  }
+
+  .safe-area-bottom {
+    background: #1a1a1a;
+  }
+}

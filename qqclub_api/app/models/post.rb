@@ -1,12 +1,15 @@
 class Post < ApplicationRecord
-  belongs_to :user
-  has_many :comments, dependent: :destroy
+  belongs_to :user, counter_cache: :posts_count
+  has_many :comments, dependent: :destroy, counter_cache: true
   has_many :likes, as: :target, dependent: :destroy
 
   # 验证
   validates :title, presence: true, length: { maximum: 100 }
   validates :content, presence: true, length: { minimum: 10, maximum: 5000 }
   validates :category, inclusion: { in: %w[reading activity chat help], allow_blank: true }
+
+  # 回调：手动维护多态关联的counter_cache
+  after_create :initialize_counters
 
   # 作用域
   scope :visible, -> { where(hidden: false) }
@@ -84,14 +87,15 @@ class Post < ApplicationRecord
     category_map[category] || '全部'
   end
 
-  # 统计点赞数
+  # 统计点赞数 - 使用counter_cache
+  # 注意：需要手动维护多态关联的counter_cache
   def likes_count
-    likes.count
+    self[:likes_count] || likes.count
   end
 
-  # 统计评论数
+  # 统计评论数 - 使用counter_cache
   def comments_count
-    comments.count
+    self[:comments_count] || comments.count
   end
 
   # 检查当前用户是否点赞
@@ -107,7 +111,62 @@ class Post < ApplicationRecord
     liked_by?(current_user)
   end
 
-  # JSON 序列化方法
+  # API序列化方法 - 标准化API响应格式
+  def as_json_for_api(options = {})
+    current_user = options[:current_user]
+
+    result = {
+      id: id,
+      title: title,
+      content: content,
+      category: category,
+      category_name: category_name,
+      pinned: pinned,
+      hidden: hidden,
+      created_at: created_at,
+      updated_at: updated_at,
+      time_ago: time_ago_in_words(created_at),
+      stats: {
+        likes_count: likes_count,
+        comments_count: comments_count
+      },
+      author: user.as_json_for_api
+    }
+
+    # 添加标签信息
+    if options[:include_tags] && respond_to?(:tags)
+      result[:tags] = tags
+    end
+
+    # 添加当前用户的交互状态
+    if current_user
+      result[:interactions] = {
+        liked: liked_by?(current_user),
+        can_edit: can_edit?(current_user),
+        can_hide: can_hide?(current_user),
+        can_pin: can_pin?(current_user)
+      }
+    end
+
+    # 包含关联数据
+    if options[:include_comments]
+      result[:recent_comments] = comments.limit(5).map(&:as_json_for_api)
+    end
+
+    if options[:include_likes]
+      result[:recent_likes] = likes.limit(10).includes(:user).map do |like|
+        {
+          id: like.id,
+          user: like.user.as_json_for_api,
+          created_at: like.created_at
+        }
+      end
+    end
+
+    result
+  end
+
+  # JSON 序列化方法 - 保持向后兼容
   def as_json(options = {})
     super({
       methods: [:author_info, :can_edit_current_user, :time_ago, :category_name, :likes_count, :comments_count, :tags, :liked_by_current_user],
@@ -128,5 +187,21 @@ class Post < ApplicationRecord
       avatar_url: user.avatar_url,
       role: user.role_display_name
     }
+  end
+
+  # 初始化计数器
+  def initialize_counters
+    # 新帖子初始化为0
+    update_column(:likes_count, 0) if likes_count.nil?
+    update_column(:comments_count, 0) if comments_count.nil?
+  end
+
+  # 手动更新点赞计数器
+  def increment_likes_count
+    increment!(:likes_count)
+  end
+
+  def decrement_likes_count
+    decrement!(:likes_count)
   end
 end

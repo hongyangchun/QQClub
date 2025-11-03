@@ -4,7 +4,6 @@
 # 提供统一的错误处理、成功/失败状态管理
 class ApplicationService
   include ActiveModel::Model
-  include ActiveModel::Attributes
 
   attr_reader :errors, :result
 
@@ -23,12 +22,14 @@ class ApplicationService
   def success!(result = nil)
     @success = true
     @result = result
+    self
   end
 
   # 标记操作失败
   def failure!(error_messages)
     @success = false
     @errors = Array(error_messages)
+    self
   end
 
   # 检查操作是否成功
@@ -59,6 +60,11 @@ class ApplicationService
   # 获取所有错误信息
   def error_messages
     @errors
+  end
+
+  # 获取错误信息（别名）
+  def error_message
+    @errors.first
   end
 
   # 清空错误信息

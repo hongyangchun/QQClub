@@ -1,9 +1,25 @@
+require 'jwt'
+
 class User < ApplicationRecord
   # 关联
   has_many :created_events, class_name: "ReadingEvent", foreign_key: "leader_id", dependent: :destroy
-  has_many :enrollments, dependent: :destroy
+  has_many :enrollments, class_name: "EventEnrollment", dependent: :destroy
+  has_many :event_enrollments, class_name: "EventEnrollment", dependent: :destroy  # 为了兼容分析系统
   has_many :reading_events, through: :enrollments
   has_many :posts, dependent: :destroy
+  has_many :check_ins, dependent: :destroy
+  has_many :comments, dependent: :destroy
+
+  # 小红花相关关联
+  has_many :received_flowers, class_name: "Flower", foreign_key: "recipient_id", dependent: :destroy
+  has_many :given_flowers, class_name: "Flower", foreign_key: "giver_id", dependent: :destroy
+  has_many :flowers, foreign_key: "giver_id", dependent: :destroy  # 为了兼容分析系统
+  has_many :flower_quotas, dependent: :destroy
+  has_many :flower_certificates, dependent: :destroy
+
+  # 通知相关关联
+  has_many :received_notifications, class_name: "Notification", foreign_key: "recipient_id", dependent: :destroy
+  has_many :sent_notifications, class_name: "Notification", foreign_key: "actor_id", dependent: :destroy
 
   # 验证
   validates :wx_openid, presence: true, uniqueness: true
@@ -74,9 +90,17 @@ class User < ApplicationRecord
   # 解析 JWT token
   def self.decode_jwt_token(token)
     begin
-      decoded = JWT.decode(token, Rails.application.credentials.jwt_secret_key || "dev_secret_key")[0]
+      # 移除 Bearer 前缀
+      token = token.gsub('Bearer ', '') if token&.start_with?('Bearer ')
+
+      secret = Rails.application.credentials.jwt_secret_key || "dev_secret_key"
+      decoded = JWT.decode(token, secret, true, { algorithm: 'HS256' })[0]
       HashWithIndifferentAccess.new(decoded)
     rescue JWT::DecodeError => e
+      Rails.logger.error "JWT Decode Error: #{e.message}"
+      nil
+    rescue => e
+      Rails.logger.error "JWT Unexpected Error: #{e.message}"
       nil
     end
   end
@@ -108,6 +132,10 @@ class User < ApplicationRecord
   end
 
   def can_approve_events?
+    admin? || root?
+  end
+
+  def can_view_approval_queue?
     admin? || root?
   end
 

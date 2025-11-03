@@ -1,26 +1,40 @@
 // pages/event/detail.js
+const eventStateManager = require('../../utils/eventStateManager');
+
 Page({
   data: {
     eventId: null,
     eventInfo: null,
     userInfo: null,
     userRole: 'guest', // guest, observer, participant, organizer
+    myEnrollment: null, // 我的报名信息
     loading: true,
     currentTab: 'info',
 
     // 数据统计
     checkinsCount: 0,
-    discussionsCount: 0,
 
     // 打卡相关
     checkins: [],
-    checkinFilter: 'all', // all, today, liked
+    checkinFilter: 'all', // all, today, liked, calendar
+
+    // 筛选相关
+    currentFilter: 'all',
+    selectedDate: null,
+    showCalendar: false,
+
+    // 日历相关
+    showCalendarPicker: false,
+    selectedDate: '',
+    selectedDateText: '',
+    currentYear: new Date().getFullYear(),
+    currentMonth: new Date().getMonth() + 1,
+    calendarDays: [],
+    calendarEmptyDays: 0,
 
     // 参与成员
     participants: [],
 
-    // 活动讨论
-    discussions: [],
 
     // 评论相关
     showCommentModal: false,
@@ -74,10 +88,46 @@ Page({
     this.setData({ loading: true });
 
     try {
-      // 这里应该调用API获取活动详情
-      // const response = await api.getEventDetail(this.data.eventId);
+      // 调用真实的API获取活动详情
+      const app = getApp();
+      const response = await app.request({
+        url: `/api/v1/reading_events/${this.data.eventId}`,
+        method: 'GET'
+      });
 
-      // 模拟数据
+      if (response.success) {
+        const eventData = response.data;
+
+        // 确定用户角色
+        const userRole = this.determineUserRoleFromData(eventData);
+
+        // 设置报名信息
+        const myEnrollment = eventData.user_enrollment || null;
+
+        this.setData({
+          eventInfo: eventData,
+          userRole,
+          myEnrollment,
+          loading: false
+        });
+
+        // 加载其他数据
+        this.loadTabData();
+      } else {
+        throw new Error(response.message || '加载失败');
+      }
+
+    } catch (error) {
+      console.error('加载活动详情失败:', error);
+
+      // 如果API调用失败，使用模拟数据作为后备
+      this.loadMockEventDetail();
+    }
+  },
+
+  // 加载模拟活动详情（后备方案）
+  loadMockEventDetail() {
+    try {
       const mockEvent = {
         id: this.data.eventId,
         title: '《百年孤独》深度阅读共读活动',
@@ -96,12 +146,15 @@ Page({
         status_text: '进行中',
         status_icon: '📖',
         date_range: '2024-01-15 至 2024-02-14',
+        start_date: '2025-01-15',
+        end_date: '2025-02-14',
         days_count: 30,
         participants_count: 15,
         max_participants: 20,
         enrollment_fee: 0,
         can_enroll: true,
-        completed_today: 8
+        completed_today: 8,
+        user_enrollment: null // 模拟无报名信息
       };
 
       // 模拟用户角色判断
@@ -110,6 +163,7 @@ Page({
       this.setData({
         eventInfo: mockEvent,
         userRole,
+        myEnrollment: mockEvent.user_enrollment,
         loading: false
       });
 
@@ -117,7 +171,7 @@ Page({
       this.loadTabData();
 
     } catch (error) {
-      console.error('加载活动详情失败:', error);
+      console.error('加载模拟数据失败:', error);
       this.setData({ loading: false });
       wx.showToast({
         title: '加载失败',
@@ -126,32 +180,7 @@ Page({
     }
   },
 
-  // 确定用户角色
-  determineUserRole(event) {
-    if (!this.data.userInfo) {
-      return 'guest';
-    }
-
-    // 模拟判断逻辑
-    const userId = this.data.userInfo.id;
-
-    if (event.leader.id === userId) {
-      return 'organizer';
-    }
-
-    // 模拟判断是否为参与者或围观者
-    const isParticipant = Math.random() > 0.5;
-    const isObserver = Math.random() > 0.7;
-
-    if (isParticipant) {
-      return 'participant';
-    } else if (isObserver) {
-      return 'observer';
-    }
-
-    return 'guest';
-  },
-
+  
   // 加载标签页数据
   async loadTabData() {
     switch (this.data.currentTab) {
@@ -160,9 +189,6 @@ Page({
         break;
       case 'participants':
         await this.loadParticipants();
-        break;
-      case 'discussions':
-        await this.loadDiscussions();
         break;
     }
   },
@@ -295,47 +321,7 @@ Page({
     }
   },
 
-  // 加载活动讨论
-  async loadDiscussions() {
-    try {
-      // const response = await api.getDiscussions(this.data.eventId);
-
-      // 模拟数据
-      const mockDiscussions = this.generateMockDiscussions();
-
-      this.setData({
-        discussions: mockDiscussions,
-        discussionsCount: mockDiscussions.length
-      });
-    } catch (error) {
-      console.error('加载活动讨论失败:', error);
-    }
-  },
-
-  // 生成模拟讨论数据
-  generateMockDiscussions() {
-    const discussions = [];
-
-    for (let i = 0; i < 5; i++) {
-      discussions.push({
-        id: i + 1,
-        title: `关于第${i + 1}章节的深入讨论`,
-        content_preview: `今天读了第${i + 1}章，有一些想法想和大家交流一下。特别是关于...`,
-        author: {
-          id: Math.floor(Math.random() * 10) + 1,
-          nickname: `讨论者${Math.floor(Math.random() * 100) + 1}`,
-          avatar_url: `https://picsum.photos/50/50?random=${i + 400}`
-        },
-        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at_relative: this.getRelativeTime(new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)),
-        comments_count: Math.floor(Math.random() * 15) + 5,
-        views_count: Math.floor(Math.random() * 50) + 20
-      });
-    }
-
-    return discussions;
-  },
-
+  
   // 过滤打卡
   filterCheckins(e) {
     const filter = e.currentTarget.dataset.filter;
@@ -408,14 +394,7 @@ Page({
     });
   },
 
-  // 查看讨论
-  viewDiscussions() {
-    this.setData({
-      currentTab: 'discussions'
-    });
-    this.loadDiscussions();
-  },
-
+  
   // 作为参与者报名
   async enrollAsParticipant() {
     if (!this.data.userInfo) {
@@ -436,29 +415,79 @@ Page({
 
     if (!this.data.eventInfo.can_enroll) {
       wx.showToast({
-        title: '活动已满员',
+        title: '活动已满员或已截止',
         icon: 'none'
       });
       return;
     }
 
     try {
-      // await api.enrollAsParticipant(this.data.eventId);
-
-      this.setData({
-        userRole: 'participant'
+      wx.showLoading({
+        title: '报名中...',
+        mask: true
       });
 
-      this.loadEventDetail();
-
-      wx.showToast({
-        title: '参与成功',
-        icon: 'success'
+      const app = getApp();
+      const response = await app.request({
+        url: '/api/v1/event_enrollments',
+        method: 'POST',
+        data: {
+          event_enrollment: {
+            reading_event_id: this.data.eventId,
+            enrollment_type: 'participant'
+          }
+        }
       });
+
+      wx.hideLoading();
+
+      if (response.success) {
+        // 更新用户角色
+        this.updateUserRole(response.data);
+
+        // 重新加载活动详情
+        this.loadEventDetail();
+
+        wx.showToast({
+          title: '参与成功',
+          icon: 'success'
+        });
+
+        // 询问是否立即进入共读主页
+        setTimeout(() => {
+          wx.showModal({
+            title: '报名成功',
+            content: '是否立即进入共读主页查看今日任务？',
+            confirmText: '进入',
+            cancelText: '稍后',
+            success: (res) => {
+              if (res.confirm) {
+                this.goToParticipatePage();
+              }
+            }
+          });
+        }, 1500);
+      } else {
+        throw new Error(response.message || '报名失败');
+      }
+
     } catch (error) {
+      wx.hideLoading();
       console.error('参与活动失败:', error);
+
+      let errorMsg = '参与失败';
+      if (error.message) {
+        if (error.message.includes('满员')) {
+          errorMsg = '活动人数已满';
+        } else if (error.message.includes('截止')) {
+          errorMsg = '报名已截止';
+        } else {
+          errorMsg = error.message;
+        }
+      }
+
       wx.showToast({
-        title: '参与失败',
+        title: errorMsg,
         icon: 'none'
       });
     }
@@ -483,41 +512,72 @@ Page({
     }
 
     try {
-      // await api.enrollAsObserver(this.data.eventId);
-
-      this.setData({
-        userRole: 'observer'
+      wx.showLoading({
+        title: '围观中...',
+        mask: true
       });
 
-      this.loadEventDetail();
-
-      wx.showToast({
-        title: '围观成功',
-        icon: 'success'
+      const app = getApp();
+      const response = await app.request({
+        url: '/api/v1/event_enrollments',
+        method: 'POST',
+        data: {
+          event_enrollment: {
+            reading_event_id: this.data.eventId,
+            enrollment_type: 'observer'
+          }
+        }
       });
+
+      wx.hideLoading();
+
+      if (response.success) {
+        // 更新用户角色
+        this.updateUserRole(response.data);
+
+        // 重新加载活动详情
+        this.loadEventDetail();
+
+        wx.showToast({
+          title: '围观成功',
+          icon: 'success'
+        });
+
+        // 询问是否立即进入围观主页
+        setTimeout(() => {
+          wx.showModal({
+            title: '围观成功',
+            content: '是否立即进入围观主页查看精选内容？',
+            confirmText: '进入',
+            cancelText: '稍后',
+            success: (res) => {
+              if (res.confirm) {
+                this.goToObservePage();
+              }
+            }
+          });
+        }, 1500);
+      } else {
+        throw new Error(response.message || '围观失败');
+      }
+
     } catch (error) {
+      wx.hideLoading();
       console.error('围观活动失败:', error);
+
+      let errorMsg = '围观失败';
+      if (error.message) {
+        errorMsg = error.message;
+      }
+
       wx.showToast({
-        title: '围观失败',
+        title: errorMsg,
         icon: 'none'
       });
     }
   },
 
-  // 管理活动
-  manageEvent() {
-    wx.navigateTo({
-      url: `/pages/event/manage?eventId=${this.data.eventId}`
-    });
-  },
-
-  // 查看统计数据
-  viewStatistics() {
-    wx.navigateTo({
-      url: `/pages/event/stats?eventId=${this.data.eventId}`
-    });
-  },
-
+  
   // 点赞打卡
   async likeCheckin(e) {
     const checkinId = e.currentTarget.dataset.id;
@@ -825,6 +885,50 @@ Page({
     });
   },
 
+  // 送小红花给打卡
+  async giveFlowerToCheckin(e) {
+    const { id: checkinId, userId } = e.currentTarget.dataset;
+
+    try {
+      wx.showLoading({
+        title: '送花中...',
+        mask: true
+      });
+
+      const app = getApp();
+      const response = await app.request({
+        url: '/api/v1/flowers/give',
+        method: 'POST',
+        data: {
+          flower: {
+            receiver_id: userId,
+            checkin_id: checkinId,
+            flower_type: 'like'
+          }
+        }
+      });
+
+      wx.hideLoading();
+
+      if (response?.success) {
+        wx.showToast({
+          title: '送花成功',
+          icon: 'success'
+        });
+
+        // 重新加载数据
+        this.loadCheckins();
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('送花失败:', error);
+      wx.showToast({
+        title: '送花失败',
+        icon: 'none'
+      });
+    }
+  },
+
   // 查看打卡详情
   viewCheckinDetail(e) {
     const checkinId = e.currentTarget.dataset.id;
@@ -850,29 +954,7 @@ Page({
     });
   },
 
-  // 发起讨论
-  startDiscussion() {
-    if (this.data.userRole === 'observer') {
-      wx.showToast({
-        title: '围观者不能发起讨论',
-        icon: 'none'
-      });
-      return;
-    }
-
-    wx.navigateTo({
-      url: `/pages/event/createDiscussion?eventId=${this.data.eventId}`
-    });
-  },
-
-  // 查看讨论详情
-  viewDiscussion(e) {
-    const discussionId = e.currentTarget.dataset.id;
-    wx.navigateTo({
-      url: `/pages/event/discussionDetail?id=${discussionId}`
-    });
-  },
-
+  
   // 返回列表
   goBack() {
     wx.navigateBack();
@@ -897,5 +979,644 @@ Page({
   // 阻止事件冒泡
   stopPropagation() {
     // 阻止点击评论内容时关闭弹窗
+  },
+
+  // === 新增的页面导航和方法 ===
+
+  // 获取角色图标
+  getRoleIcon(role) {
+    const roleIcons = {
+      'participant': '🎯',
+      'observer': '👀',
+      'organizer': '👑',
+      'guest': '👤'
+    };
+    return roleIcons[role] || '👤';
+  },
+
+  // 获取角色文本
+  getRoleText(role) {
+    const roleTexts = {
+      'participant': '参与者',
+      'observer': '围观者',
+      'organizer': '组织者',
+      'guest': '游客'
+    };
+    return roleTexts[role] || '游客';
+  },
+
+  // 跳转到参与者主页
+  goToParticipatePage() {
+    console.log('=== 调试：进入参与者主页 ===');
+    console.log('当前角色:', this.data.userRole);
+    console.log('活动ID:', this.data.eventId);
+    console.log('完整URL:', `/pages/event/participate?id=${this.data.eventId}`);
+
+    // 显示加载提示
+    wx.showLoading({
+      title: '加载中...',
+      mask: true
+    });
+
+    // 直接跳转到参与者页面，无论当前是什么角色
+    wx.navigateTo({
+      url: `/pages/event/participate?id=${this.data.eventId}`,
+      success: (res) => {
+        console.log('导航成功:', res);
+        wx.hideLoading();
+      },
+      fail: (err) => {
+        console.error('导航失败:', err);
+        wx.hideLoading();
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // 跳转到围观主页
+  goToObservePage() {
+    console.log('=== 调试：进入围观主页 ===');
+    console.log('当前角色:', this.data.userRole);
+    console.log('活动ID:', this.data.eventId);
+    console.log('完整URL:', `/pages/event/observe?id=${this.data.eventId}`);
+
+    // 显示加载提示
+    wx.showLoading({
+      title: '加载中...',
+      mask: true
+    });
+
+    // 直接跳转到围观者页面，无论当前是什么角色
+    wx.navigateTo({
+      url: `/pages/event/observe?id=${this.data.eventId}`,
+      success: (res) => {
+        console.log('导航成功:', res);
+        wx.hideLoading();
+      },
+      fail: (err) => {
+        console.error('导航失败:', err);
+        wx.hideLoading();
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // 快速打卡
+  quickCheckIn() {
+    wx.navigateTo({
+      url: `/pages/event/checkin?eventId=${this.data.eventId}&mode=quick`
+    });
+  },
+
+  // 查看排行榜
+  viewRanking() {
+    wx.navigateTo({
+      url: `/pages/event/ranking?eventId=${this.data.eventId}`
+    });
+  },
+
+  // 送小红花
+  giveFlowers() {
+    wx.navigateTo({
+      url: `/pages/event/flowers?eventId=${this.data.eventId}`
+    });
+  },
+
+  // 查看精选内容
+  viewFeaturedContent() {
+    wx.navigateTo({
+      url: `/pages/event/featured?id=${this.data.eventId}`
+    });
+  },
+
+  // 分享活动
+  shareEvent() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      success: () => {
+        wx.showToast({
+          title: '分享成功',
+          icon: 'success'
+        });
+      }
+    });
+  },
+
+  // 跳转到活动信息页面
+  goToActivityInfo() {
+    wx.navigateTo({
+      url: `/pages/event/activity-info?id=${this.data.eventId}`
+    });
+  },
+
+  // 跳转到统计数据页面
+  goToStatistics() {
+    wx.navigateTo({
+      url: `/pages/event/statistics?id=${this.data.eventId}`
+    });
+  },
+
+  // 跳转到登录页面
+  goToAuth() {
+    wx.navigateTo({
+      url: '/pages/auth/auth'
+    });
+  },
+
+  // 开始打卡
+  startCheckIn() {
+    console.log('=== startCheckIn 调试信息 ===');
+    console.log('当前用户角色:', this.data.userRole);
+    console.log('用户信息:', this.data.userInfo);
+    console.log('活动信息:', this.data.eventInfo);
+    console.log('我的报名信息:', this.data.myEnrollment);
+
+    // 详细检查报名状态
+    const enrollment = this.data.myEnrollment;
+    if (enrollment) {
+      console.log('报名详情:');
+      console.log('- 报名类型:', enrollment.enrollment_type);
+      console.log('- 状态:', enrollment.status);
+      console.log('- 报名ID:', enrollment.id);
+    }
+
+    if (this.data.userRole !== 'participant') {
+      console.log('用户角色不是参与者，显示提示弹窗');
+      wx.showModal({
+        title: '提示',
+        content: '您尚未加入共读活动，加入后才能开始打卡哦！',
+        confirmText: '立即加入',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            this.enrollAsParticipant();
+          }
+        }
+      });
+      return;
+    }
+
+    console.log('用户角色是参与者，直接跳转到打卡页面');
+    wx.navigateTo({
+      url: `/pages/event/checkin?eventId=${this.data.eventId}`
+    });
+  },
+
+  
+  // 更新用户角色状态
+  updateUserRole(enrollment) {
+    let userRole = 'guest';
+    if (enrollment) {
+      userRole = enrollment.enrollment_type === 'participant' ? 'participant' : 'observer';
+    }
+
+    this.setData({
+      userRole,
+      myEnrollment: enrollment
+    });
+  },
+
+  // 重新确定用户角色（基于真实数据，使用状态管理器）
+  determineUserRoleFromData(eventData) {
+    console.log('=== determineUserRoleFromData 调试 ===');
+    console.log('eventData:', eventData);
+    console.log('userInfo:', this.data.userInfo);
+    console.log('user_enrollment:', eventData.user_enrollment);
+
+    const userRole = eventStateManager.getUserRole(eventData, this.data.userInfo);
+    console.log('计算出的用户角色:', userRole);
+
+    return userRole;
+  },
+
+  // === 日历相关功能 ===
+
+  // 显示日历选择器
+  showCalendarPicker() {
+    this.generateCalendarDays();
+    this.setData({
+      showCalendarPicker: true
+    });
+  },
+
+  // 隐藏日历选择器
+  hideCalendarPicker() {
+    this.setData({
+      showCalendarPicker: false
+    });
+  },
+
+  // 日期改变事件
+  onDateChange(e) {
+    const selectedDate = e.detail.value;
+    this.setData({
+      selectedDate
+    });
+  },
+
+  // 确认日期选择
+  confirmDateSelection() {
+    if (!this.data.selectedDate) {
+      wx.showToast({
+        title: '请选择日期',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 格式化日期显示
+    const dateObj = new Date(this.data.selectedDate);
+    const selectedDateText = this.formatDateText(dateObj);
+
+    this.setData({
+      checkinFilter: 'calendar',
+      selectedDateText,
+      showCalendarPicker: false
+    });
+
+    // 加载指定日期的打卡数据
+    this.loadCheckinsByDate(this.data.selectedDate);
+  },
+
+  // 清除日期筛选
+  clearDateFilter() {
+    this.setData({
+      checkinFilter: 'all',
+      selectedDate: '',
+      selectedDateText: ''
+    });
+    this.loadCheckins();
+  },
+
+  // 根据日期加载打卡数据
+  async loadCheckinsByDate(date) {
+    try {
+      wx.showLoading({
+        title: '加载中...',
+        mask: true
+      });
+
+      // 调用API获取指定日期的打卡数据
+      // const response = await api.getCheckinsByDate(this.data.eventId, date);
+
+      // 模拟根据日期筛选数据
+      const allCheckins = this.generateMockCheckins();
+      const filteredCheckins = allCheckins.filter(checkin => {
+        const checkinDate = new Date(checkin.created_at).toISOString().split('T')[0];
+        return checkinDate === date;
+      });
+
+      this.setData({
+        checkins: filteredCheckins,
+        checkinsCount: filteredCheckins.length
+      });
+
+      wx.hideLoading();
+
+      if (filteredCheckins.length === 0) {
+        wx.showToast({
+          title: '该日期暂无打卡',
+          icon: 'none'
+        });
+      }
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('加载指定日期打卡失败:', error);
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 格式化日期文本
+  formatDateText(date) {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekDay = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()];
+
+    return `${year}年${month}月${day}日 ${weekDay}`;
+  },
+
+  // 生成日历数据
+  generateCalendarDays() {
+    const { currentYear, currentMonth, eventInfo } = this.data;
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+    const startDate = new Date(currentYear, currentMonth - 1, 1 - firstDay.getDay());
+    const endDate = new Date(currentYear, currentMonth, 6 - lastDay.getDay());
+
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const eventStartDate = eventInfo ? new Date(eventInfo.start_date) : null;
+    const eventEndDate = eventInfo ? new Date(eventInfo.end_date) : null;
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const date = new Date(d);
+      const dateStr = date.toISOString().split('T')[0];
+
+      let dayType = 'other-month';
+      if (date.getMonth() === currentMonth - 1) {
+        dayType = 'current-month';
+      }
+
+      let isToday = false;
+      if (date.getTime() === today.getTime()) {
+        isToday = true;
+      }
+
+      let isInRange = true;
+      if (eventStartDate && eventEndDate) {
+        isInRange = date >= eventStartDate && date <= eventEndDate;
+      }
+
+      let hasCheckins = false;
+      // 简单模拟是否有打卡数据
+      if (isInRange && Math.random() > 0.7) {
+        hasCheckins = true;
+      }
+
+      days.push({
+        date: date.getDate(),
+        fullDate: dateStr,
+        dayType,
+        isToday,
+        isInRange,
+        hasCheckins,
+        isSelected: this.data.selectedDate === dateStr
+      });
+    }
+
+    this.setData({
+      calendarDays: days
+    });
+  },
+
+  // 选择日期
+  selectDate(e) {
+    const { date, isInRange } = e.currentTarget.dataset;
+
+    if (!isInRange) {
+      wx.showToast({
+        title: '该日期不在活动范围内',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.setData({
+      selectedDate: date
+    });
+  },
+
+  // 切换到上个月
+  previousMonth() {
+    let { currentYear, currentMonth } = this.data;
+    currentMonth--;
+    if (currentMonth < 1) {
+      currentMonth = 12;
+      currentYear--;
+    }
+
+    this.setData({
+      currentYear,
+      currentMonth
+    });
+    this.generateCalendarDays();
+  },
+
+  // 切换到下个月
+  nextMonth() {
+    let { currentYear, currentMonth } = this.data;
+    currentMonth++;
+    if (currentMonth > 12) {
+      currentMonth = 1;
+      currentYear++;
+    }
+
+    this.setData({
+      currentYear,
+      currentMonth
+    });
+    this.generateCalendarDays();
+  },
+
+  // 跳转到今天
+  goToToday() {
+    const today = new Date();
+    this.setData({
+      currentYear: today.getFullYear(),
+      currentMonth: today.getMonth() + 1
+    });
+    this.generateCalendar();
+  },
+
+  // 获取活动状态文本
+  getEventStatusText(status) {
+    const statusMap = {
+      'enrolling': '报名中',
+      'in_progress': '进行中',
+      'completed': '已结束'
+    };
+    return statusMap[status] || '未知';
+  },
+
+  // 获取剩余天数描述
+  getDaysLeft(event) {
+    if (!event) return '';
+
+    const now = new Date();
+    const endDate = new Date(event.end_date);
+    const startDate = new Date(event.start_date);
+
+    if (now < startDate) {
+      // 活动还未开始
+      const daysUntilStart = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+      return `${daysUntilStart}天后开始`;
+    } else if (now <= endDate) {
+      // 活动进行中
+      const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      return `剩余${daysLeft}天`;
+    } else {
+      // 活动已结束
+      return '已结束';
+    }
+  },
+
+  // 书籍封面图片加载错误处理
+  handleBookCoverError(e) {
+    console.log('书籍封面加载失败，使用默认图片');
+    // 可以在这里设置一个默认的书籍封面图片
+    // 由于小程序的限制，这里只能记录错误，实际的图片替换需要通过其他方式实现
+  },
+
+  // === 新增的筛选和日历功能 ===
+
+  // 切换筛选条件
+  changeFilter(e) {
+    const filter = e.currentTarget.dataset.filter;
+    if (filter === 'calendar') {
+      this.toggleCalendar();
+      return;
+    }
+
+    this.setData({
+      currentFilter: filter,
+      showCalendar: false
+    });
+
+    // 根据筛选条件加载打卡数据
+    this.loadFilteredCheckins(filter);
+  },
+
+  // 切换日历显示
+  toggleCalendar() {
+    const showCalendar = !this.data.showCalendar;
+    this.setData({
+      showCalendar,
+      // 当显示日历时，清空打卡列表，隐藏作业列表
+      checkins: showCalendar ? [] : this.generateMockCheckins(),
+      checkinsCount: showCalendar ? 0 : this.generateMockCheckins().length
+    });
+
+    if (showCalendar) {
+      this.generateCalendar();
+    }
+  },
+
+  // 生成日历数据
+  generateCalendar() {
+    const { currentYear, currentMonth } = this.data;
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 生成所有可能的打卡数据用于判断
+    const allCheckins = this.generateMockCheckins();
+
+    // 创建日期到打卡数的映射
+    const dateCheckinMap = {};
+    allCheckins.forEach(checkin => {
+      const checkinDate = new Date(checkin.created_at).toISOString().split('T')[0];
+      dateCheckinMap[checkinDate] = (dateCheckinMap[checkinDate] || 0) + 1;
+    });
+
+    // 生成月份天数
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const date = new Date(currentYear, currentMonth - 1, day);
+      const dateStr = this.formatDate(date);
+      const isToday = date.getTime() === today.getTime();
+
+      // 检查该日期是否有真实打卡数据
+      const hasCheckins = dateCheckinMap[dateStr] > 0;
+      const isSelected = this.data.selectedDate === dateStr;
+
+      days.push({
+        day,
+        date: dateStr,
+        isToday,
+        hasCheckins,
+        isSelected,
+        checkinCount: dateCheckinMap[dateStr] || 0
+      });
+    }
+
+    this.setData({ calendarDays: days });
+  },
+
+  // 切换月份
+  changeMonth(e) {
+    const direction = parseInt(e.currentTarget.dataset.direction);
+    let { currentYear, currentMonth } = this.data;
+
+    currentMonth += direction;
+    if (currentMonth < 1) {
+      currentMonth = 12;
+      currentYear--;
+    } else if (currentMonth > 12) {
+      currentMonth = 1;
+      currentYear++;
+    }
+
+    this.setData({ currentYear, currentMonth });
+    this.generateCalendar();
+  },
+
+  // 切换年份
+  changeYear(e) {
+    const direction = parseInt(e.currentTarget.dataset.direction);
+    let { currentYear } = this.data;
+
+    currentYear += direction;
+
+    this.setData({ currentYear });
+    this.generateCalendar();
+  },
+
+  // 选择日期
+  selectDate(e) {
+    const date = e.currentTarget.dataset.date;
+    this.setData({
+      selectedDate: date,
+      currentFilter: 'calendar',
+      showCalendar: false
+    });
+
+    // 加载指定日期的打卡
+    this.loadFilteredCheckins('calendar', date);
+  },
+
+  // 根据筛选条件加载打卡数据
+  loadFilteredCheckins(filter, date = null) {
+    let filteredCheckins = this.generateMockCheckins();
+
+    switch (filter) {
+      case 'today':
+        const today = new Date().toISOString().split('T')[0];
+        filteredCheckins = filteredCheckins.filter(checkin => {
+          const checkinDate = new Date(checkin.created_at).toISOString().split('T')[0];
+          return checkinDate === today;
+        });
+        break;
+
+      case 'calendar':
+        if (date) {
+          filteredCheckins = filteredCheckins.filter(checkin => {
+            const checkinDate = new Date(checkin.created_at).toISOString().split('T')[0];
+            return checkinDate === date;
+          });
+        }
+        break;
+
+      default:
+        // 'all' - 显示所有打卡
+        break;
+    }
+
+    this.setData({
+      checkins: filteredCheckins,
+      checkinsCount: filteredCheckins.length
+    });
+  },
+
+  // 格式化日期
+  formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 });

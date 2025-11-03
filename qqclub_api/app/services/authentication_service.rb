@@ -129,11 +129,13 @@ class AuthenticationService < ApplicationService
     access_token = @user.generate_jwt_token
     refresh_token = @user.generate_refresh_token
 
-    success!({
+    response_data = {
       access_token: access_token,
       refresh_token: refresh_token,
       user: user_data(@user)
-    })
+    }
+
+    success!(response_data)
   end
 
   # 格式化用户数据 - 返回字符串键格式用于API响应

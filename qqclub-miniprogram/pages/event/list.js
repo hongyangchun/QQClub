@@ -15,6 +15,7 @@ Page({
   },
 
   onLoad(options) {
+    console.log('活动列表页面 onLoad')
     this.getUserInfo()
     this.loadEvents(true)
   },
@@ -68,7 +69,7 @@ Page({
 
     try {
       const page = refresh ? 1 : this.data.page
-      const response = await this.mockApiCall({
+      const response = await this.apiCall({
         page,
         filter: this.data.currentFilter,
         userId: this.data.userInfo?.id
@@ -98,193 +99,141 @@ Page({
     this.loadEvents(false)
   },
 
-  // 模拟API调用
-  mockApiCall(params) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockEvents = this.generateMockEvents(params.page, params.filter)
-        resolve({
-          events: mockEvents,
-          hasMore: params.page < 3,
-          enrollingCount: 5
-        })
-      }, 800)
+  // 真实API调用
+  apiCall(params) {
+    return new Promise((resolve, reject) => {
+      const { page, filter, userId } = params
+
+      // 构建API URL
+      let url = `${app.globalData.baseUrl}/api/v1/reading_events?page=${page}&limit=10`
+
+      // 添加筛选条件
+      if (filter && filter !== 'all') {
+        url += `&status=${filter}`
+      }
+
+      // 添加用户ID（如果需要获取用户相关的活动）
+      if (userId) {
+        url += `&user_id=${userId}`
+      }
+
+      wx.request({
+        url: url,
+        method: 'GET',
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': app.globalData.token ? `Bearer ${app.globalData.token}` : undefined
+        },
+        success: (res) => {
+          console.log('活动列表API响应:', res)
+
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            if (res.data && (res.data.success || res.data.code === 200)) {
+              const events = res.data.data || []
+              const transformedEvents = events.map(event => this.transformEventData(event))
+
+              // 计算是否还有更多数据
+              const meta = res.data.meta || {}
+              const hasMore = meta.next_page !== null || events.length === 10
+
+              resolve({
+                events: transformedEvents,
+                hasMore: hasMore,
+                enrollingCount: events.filter(e => e.status === 'enrolling').length || 0
+              })
+            } else {
+              reject(new Error(res.data?.message || res.data?.error || '获取活动列表失败'))
+            }
+          } else {
+            reject(new Error(`服务器错误: ${res.statusCode}`))
+          }
+        },
+        fail: (err) => {
+          console.error('API调用失败:', err)
+          reject(new Error('网络错误，请重试'))
+        }
+      })
     })
   },
 
-  // 生成模拟活动数据
-  generateMockEvents(page, filter) {
-    const events = []
-    const startIndex = (page - 1) * 10
-    const allBooks = [
-      '百年孤独', '1984', '小王子', '活着', '三体',
-      '围城', '红楼梦', '人类简史', '思考快与慢', '原则'
-    ]
-    const allLeaders = [
-      '读书达人小王', '文学爱好者小李', '资深书虫小张', '阅读推广员小陈',
-      '书香门第小刘', '书籍收藏家小赵'
-    ]
-
-    const statuses = ['enrolling', 'in_progress', 'completed']
+  // 转换API响应数据格式
+  transformEventData(event) {
     const statusTexts = {
+      'draft': '草稿',
       'enrolling': '报名中',
       'in_progress': '进行中',
       'completed': '已结束'
     }
 
-    for (let i = 0; i < 10; i++) {
-      const status = statuses[Math.floor(Math.random() * statuses.length)]
-
-      // 根据筛选条件过滤
-      if (filter !== 'all' && status !== filter) {
-        continue
-      }
-
-      const bookIndex = Math.floor(Math.random() * allBooks.length)
-      const leaderIndex = Math.floor(Math.random() * allLeaders.length)
-      const participantCount = Math.floor(Math.random() * 30) + 5
-      const isParticipant = Math.random() > 0.8
-      const isObserver = Math.random() > 0.9
-
-      events.push({
-        id: startIndex + i + 1,
-        title: `共读《${allBooks[bookIndex]}》第${startIndex + i + 1}期`,
-        book_name: allBooks[bookIndex],
-        leader_name: allLeaders[leaderIndex],
-        status: status,
-        status_text: statusTexts[status],
-        start_date: '2025-01-15',
-        end_date: '2025-02-15',
-        date_range: '1月15日 - 2月15日',
-        participants_count: participantCount,
-        max_participants: 50,
-        can_join: status === 'enrolling' && !isParticipant && !isObserver,
-        can_observe: !isParticipant && !isObserver,
-        is_participant: isParticipant,
-        is_observer: isObserver,
-        description: '这是一个关于深度阅读和思考分享的活动，我们通过每日打卡和作业提交来共同进步。'
-      })
+    return {
+      id: event.id,
+      title: event.title,
+      book_name: event.book_name,
+      book_cover_url: event.book_cover_url,
+      leader_name: event.leader?.nickname || '未知组织者',
+      status: event.status,
+      status_text: statusTexts[event.status] || event.status,
+      start_date: event.start_date,
+      end_date: event.end_date,
+      date_range: this.formatDateRange(event.start_date, event.end_date),
+      participants_count: event.participants_count || 0,
+      max_participants: event.max_participants,
+      available_spots: event.available_spots,
+      can_join: event.status === 'enrolling' && event.available_spots > 0,
+      can_observe: true, // 默认允许围观
+      is_participant: event.is_participant || false,
+      is_observer: event.is_observer || false,
+      description: event.description,
+      fee_type: event.fee_type,
+      fee_amount: parseFloat(event.fee_amount) || 0,
+      activity_mode: event.activity_mode,
+      approval_status: event.approval_status
     }
-
-    return events
   },
 
-  // 加入共读活动
-  joinEvent(e) {
-    const eventId = e.currentTarget.dataset.id
-    const userInfo = this.data.userInfo
+  // 格式化日期范围
+  formatDateRange(startDate, endDate) {
+    if (!startDate || !endDate) return ''
 
-    if (!userInfo) {
-      wx.showModal({
-        title: '提示',
-        content: '请先登录后再加入活动',
-        confirmText: '去登录',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({
-              url: '/pages/auth/auth'
-            })
-          }
-        }
-      })
-      return
-    }
+    try {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
 
-    wx.showModal({
-      title: '确认加入',
-      content: '确定要加入这个共读活动吗？',
-      success: (res) => {
-        if (res.confirm) {
-          // 更新本地状态
-          const events = this.data.events.map(event => {
-            if (event.id === eventId) {
-              return {
-                ...event,
-                is_participant: true,
-                can_join: false,
-                can_observe: false,
-                participants_count: event.participants_count + 1
-              }
-            }
-            return event
-          })
+      const startMonth = start.getMonth() + 1
+      const startDay = start.getDate()
+      const endMonth = end.getMonth() + 1
+      const endDay = end.getDate()
 
-          this.setData({ events })
-
-          // 更新参与的活动列表
-          this.setData({
-            participatingEvents: [...this.data.participatingEvents, eventId]
-          })
-
-          wx.showToast({
-            title: '加入成功',
-            icon: 'success'
-          })
-        }
+      if (startMonth === endMonth) {
+        return `${startMonth}月${startDay}日 - ${endDay}日`
+      } else {
+        return `${startMonth}月${startDay}日 - ${endMonth}月${endDay}日`
       }
-    })
+    } catch (error) {
+      console.error('日期格式化错误:', error)
+      return startDate && endDate ? `${startDate} - ${endDate}` : ''
+    }
   },
 
-  // 围观共读活动
-  observeEvent(e) {
-    const eventId = e.currentTarget.dataset.id
-    const userInfo = this.data.userInfo
-
-    if (!userInfo) {
-      wx.showModal({
-        title: '提示',
-        content: '请先登录后再围观活动',
-        confirmText: '去登录',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({
-              url: '/pages/auth/auth'
-            })
-          }
-        }
-      })
-      return
-    }
-
-    wx.showModal({
-      title: '确认围观',
-      content: '围观后可以查看活动内容，但无法提交作业',
-      success: (res) => {
-        if (res.confirm) {
-          // 更新本地状态
-          const events = this.data.events.map(event => {
-            if (event.id === eventId) {
-              return {
-                ...event,
-                is_observer: true,
-                can_join: false,
-                can_observe: false
-              }
-            }
-            return event
-          })
-
-          this.setData({ events })
-
-          // 更新围观的活动列表
-          this.setData({
-            observingEvents: [...this.data.observingEvents, eventId]
-          })
-
-          wx.showToast({
-            title: '围观成功',
-            icon: 'success'
-          })
-        }
-      }
-    })
-  },
-
+  
   // 跳转到活动详情
   goToEventDetail(e) {
+    console.log('goToEventDetail 被调用', e)
     const eventId = e.currentTarget.dataset.id
+    console.log('跳转到活动详情，ID:', eventId)
+
     wx.navigateTo({
-      url: `/pages/event/detail?id=${eventId}`
+      url: `/pages/event/home?id=${eventId}`,
+      success: () => {
+        console.log('成功跳转到活动主页')
+      },
+      fail: (err) => {
+        console.error('跳转失败:', err)
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'none'
+        })
+      }
     })
   },
 
@@ -327,5 +276,11 @@ Page({
       title: '恰恰读书会 - 共读区',
       imageUrl: '/images/share-cover.jpg'
     }
+  },
+
+  // 阻止事件冒泡
+  stopPropagation() {
+    // 这个方法只是为了阻止事件冒泡，不做任何实际操作
+    return
   }
 })

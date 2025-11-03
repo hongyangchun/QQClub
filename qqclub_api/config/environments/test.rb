@@ -50,4 +50,17 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # 测试环境配置：简化安全中间件
+  config.after_initialize do
+    # 在测试环境中禁用一些可能引起问题的中间件功能
+    if defined?(ApiRateLimitingService)
+      # 确保测试环境中限流服务不会尝试连接Redis
+      ApiRateLimitingService.class_eval do
+        def redis_available?
+          false
+        end
+      end
+    end
+  end
 end

@@ -1,0 +1,20 @@
+<!--components/custom-tabbar/custom-tabbar.wxml-->
+<view class="custom-tabbar">
+  <view class="tabbar-container">
+    <view
+      class="tab-item {{index === current ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="pagePath"
+      data-index="{{index}}"
+      bindtap="switchTab"
+    >
+      <view class="tab-icon">
+        <text class="icon-text">{{index === current ? item.selectedIcon : item.icon}}</text>
+      </view>
+      <text class="tab-text">{{item.text}}</text>
+    </view>
+  </view>
+
+  <!-- 安全区域适配 -->
+  <view class="safe-area-bottom"></view>
+</view>

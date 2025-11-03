@@ -1,0 +1,211 @@
+<!--pages/event/activity-info.wxml-->
+<view class="container page-container">
+  <!-- 活动头部信息 -->
+  <view class="event-hero" wx:if="{{eventInfo}}">
+    <view class="hero-background"></view>
+    <view class="hero-content">
+      <!-- 活动状态 -->
+      <view class="event-status-bar">
+        <view class="status-item approval-{{eventInfo.approval_status}}">
+          <text class="status-dot"></text>
+          <text class="status-text">{{eventInfo.approval_status_text}}</text>
+        </view>
+        <view class="status-item status-{{eventInfo.status}}">
+          <text class="status-icon">{{eventInfo.status_icon}}</text>
+          <text class="status-text">{{eventInfo.status_text}}</text>
+        </view>
+      </view>
+
+      <!-- 活动标题和书籍 -->
+      <view class="event-title-section">
+        <view class="event-title">{{eventInfo.title}}</view>
+        <view class="event-book">
+          <text class="book-icon">📖</text>
+          <text class="book-name">{{eventInfo.book_name}}</text>
+        </view>
+      </view>
+
+      <!-- 活动时间信息 -->
+      <view class="event-time-info">
+        <view class="time-item">
+          <text class="time-icon">📅</text>
+          <view class="time-content">
+            <text class="time-label">活动时间</text>
+            <text class="time-value">{{eventInfo.date_range}}</text>
+          </view>
+        </view>
+        <view class="time-item">
+          <text class="time-icon">⏰</text>
+          <view class="time-content">
+            <text class="time-label">活动天数</text>
+            <text class="time-value">{{eventInfo.days_count}}天</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动详细信息卡片 -->
+  <view class="info-section" wx:if="{{eventInfo}}">
+    <!-- 参与统计 -->
+    <view class="info-card prominent">
+      <view class="card-header">
+        <text class="card-icon">👥</text>
+        <text class="card-title">参与信息</text>
+      </view>
+      <view class="card-content">
+        <view class="info-grid">
+          <view class="info-item">
+            <text class="info-label">当前人数</text>
+            <text class="info-value">{{eventInfo.participants_count}}人</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">最大人数</text>
+            <text class="info-value">{{eventInfo.max_participants}}人</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">活动费用</text>
+            <text class="info-value">{{eventInfo.enrollment_fee || 0}}元</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">剩余名额</text>
+            <text class="info-value">{{eventInfo.remaining_slots || 0}}人</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 活动介绍 -->
+    <view class="info-card">
+      <view class="card-header">
+        <text class="card-icon">📋</text>
+        <text class="card-title">活动介绍</text>
+      </view>
+      <view class="card-content">
+        <text class="description-text">{{eventInfo.description || '暂无详细介绍'}}</text>
+      </view>
+    </view>
+
+    <!-- 活动规则 -->
+    <view class="info-card">
+      <view class="card-header">
+        <text class="card-icon">📜</text>
+        <text class="card-title">活动规则</text>
+      </view>
+      <view class="card-content">
+        <text class="rules-text">{{eventInfo.rules || '暂无规则说明'}}</text>
+      </view>
+    </view>
+
+    <!-- 活动设置 -->
+    <view class="info-card">
+      <view class="card-header">
+        <text class="card-icon">⚙️</text>
+        <text class="card-title">活动设置</text>
+      </view>
+      <view class="card-content">
+        <view class="settings-list">
+          <view class="setting-item">
+            <text class="setting-label">活动模式</text>
+            <text class="setting-value">{{eventInfo.activity_mode_text || '笔记打卡'}}</text>
+          </view>
+          <view class="setting-item">
+            <text class="setting-label">完成标准</text>
+            <text class="setting-value">{{eventInfo.completion_standard || 80}}%</text>
+          </view>
+          <view class="setting-item">
+            <text class="setting-label">领读分配</text>
+            <text class="setting-value">{{eventInfo.leader_assignment_type_text || '自愿报名'}}</text>
+          </view>
+          <view class="setting-item">
+            <text class="setting-label">最小参与人数</text>
+            <text class="setting-value">{{eventInfo.min_participants || 5}}人</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 组织者信息 -->
+    <view class="info-card" wx:if="{{eventInfo.leader}}">
+      <view class="card-header">
+        <text class="card-icon">👤</text>
+        <text class="card-title">组织者信息</text>
+      </view>
+      <view class="card-content">
+        <view class="organizer-info">
+          <image class="organizer-avatar" src="{{eventInfo.leader.avatar_url}}" mode="aspectFill"></image>
+          <view class="organizer-details">
+            <view class="organizer-name">{{eventInfo.leader.nickname}}</view>
+            <view class="organizer-bio">{{eventInfo.leader.bio || '活动组织者'}}</view>
+            <view class="organizer-stats" wx:if="{{eventInfo.leader.stats}}">
+              <text class="stat-text">已组织{{eventInfo.leader.stats.organized_count || 0}}场活动</text>
+            </view>
+          </view>
+          <button class="contact-btn" bindtap="contactOrganizer">
+            <text class="btn-icon">💬</text>
+            <text class="btn-text">联系</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 活动状态时间线 -->
+    <view class="info-card">
+      <view class="card-header">
+        <text class="card-icon">🕐</text>
+        <text class="card-title">活动时间线</text>
+      </view>
+      <view class="card-content">
+        <view class="timeline">
+          <view class="timeline-item">
+            <view class="timeline-dot {{eventInfo.status === 'enrolling' ? 'active' : ''}}"></view>
+            <view class="timeline-content">
+              <text class="timeline-title">报名阶段</text>
+              <text class="timeline-time">{{eventInfo.enrollment_start_date || '活动开始'}} - {{eventInfo.start_date}}</text>
+            </view>
+          </view>
+          <view class="timeline-item">
+            <view class="timeline-dot {{eventInfo.status === 'in_progress' ? 'active' : ''}}"></view>
+            <view class="timeline-content">
+              <text class="timeline-title">进行阶段</text>
+              <text class="timeline-time">{{eventInfo.start_date}} - {{eventInfo.end_date}}</text>
+            </view>
+          </view>
+          <view class="timeline-item">
+            <view class="timeline-dot {{eventInfo.status === 'completed' ? 'active' : ''}}"></view>
+            <view class="timeline-content">
+              <text class="timeline-title">完成阶段</text>
+              <text class="timeline-time">{{eventInfo.end_date}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="bottom-actions" wx:if="{{eventInfo}}">
+    <button class="action-btn outline" bindtap="goBack">
+      <text class="btn-icon">←</text>
+      <text class="btn-text">返回详情</text>
+    </button>
+    <button class="action-btn primary" bindtap="shareEvent">
+      <text class="btn-icon">📤</text>
+      <text class="btn-text">分享活动</text>
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && !eventInfo}}">
+    <text class="empty-emoji">📚</text>
+    <text class="empty-text">活动信息不存在</text>
+    <text class="empty-desc">该活动可能已被删除或您没有访问权限</text>
+    <button class="btn btn-primary" bindtap="goBack">返回</button>
+  </view>
+</view>

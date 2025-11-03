@@ -25,11 +25,12 @@
 Authorization: Bearer <your_jwt_token>
 ```
 
-### 响应格式规范
+### 响应格式规范 (v2.0 标准化)
 
-#### 成功响应格式
+#### 统一成功响应格式
 ```json
 {
+  "success": true,
   "message": "操作成功",
   "data": {
     // 具体数据内容
@@ -37,15 +38,46 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-#### 错误响应格式
+#### 统一错误响应格式
 ```json
 {
+  "success": false,
   "error": "错误描述",
   "errors": [
     // 详细错误信息数组
   ]
 }
 ```
+
+#### 列表响应格式
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": [
+    // 数据列表
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 10,
+    "total_count": 100,
+    "per_page": 10
+  }
+}
+```
+
+#### 创建/更新响应格式
+```json
+{
+  "success": true,
+  "message": "创建成功",
+  "data": {
+    // 创建/更新后的完整数据
+  }
+}
+```
+
+**说明**: v2.0 API响应格式已标准化，所有接口都包含 `success` 字段来明确表示操作是否成功。
 
 #### 分页响应格式
 ```json
@@ -96,6 +128,7 @@ POST /api/auth/mock_login
 **响应**:
 ```json
 {
+  "success": true,
   "message": "登录成功",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiJ9...",
@@ -120,13 +153,14 @@ Authorization: Bearer <token>
 **响应**:
 ```json
 {
+  "success": true,
   "message": "获取成功",
   "data": {
     "id": 1,
     "openid": "test_user_001",
     "nickname": "测试用户",
     "avatar_url": "https://example.com/avatar.jpg",
-      "role": "user",
+    "role": "user",
     "created_at": "2025-10-16T10:00:00Z",
     "updated_at": "2025-10-16T10:00:00Z"
   }
@@ -365,19 +399,23 @@ Authorization: Bearer <token>
 }
 ```
 
-**响应**:
+**响应** (v2.0 标准化格式):
 ```json
 {
-  "message": "评论添加成功",
-  "comment": {
+  "success": true,
+  "message": "评论发布成功",
+  "data": {
     "id": 1,
     "content": "评论内容",
-    "user": {
+    "author_info": {
       "id": 2,
       "nickname": "评论者",
       "avatar_url": "https://example.com/avatar2.jpg"
     },
-    "created_at": "2025-10-16T11:00:00Z"
+    "can_edit_current_user": true,
+    "time_ago": "刚刚",
+    "created_at": "2025-10-16T11:00:00Z",
+    "updated_at": "2025-10-16T11:00:00Z"
   }
 }
 ```
@@ -388,21 +426,160 @@ GET /api/posts/:id/comments
 Authorization: Bearer <token>
 ```
 
-**响应**:
+**响应** (v2.0 标准化格式):
 ```json
-[
-  {
+{
+  "success": true,
+  "message": "获取评论列表成功",
+  "data": [
+    {
+      "id": 1,
+      "content": "评论内容",
+      "author_info": {
+        "id": 2,
+        "nickname": "评论者",
+        "avatar_url": "https://example.com/avatar2.jpg"
+      },
+      "can_edit_current_user": false,
+      "time_ago": "2小时前",
+      "created_at": "2025-10-16T09:00:00Z",
+      "updated_at": "2025-10-16T09:00:00Z"
+    }
+  ]
+}
+```
+
+### 更新评论
+```http
+PUT /api/comments/:id
+Authorization: Bearer <token>
+```
+
+**请求体**:
+```json
+{
+  "comment": {
+    "content": "更新后的评论内容"
+  }
+}
+```
+
+**响应** (v2.0 标准化格式):
+```json
+{
+  "success": true,
+  "message": "评论更新成功",
+  "data": {
     "id": 1,
-    "content": "评论内容",
-    "user": {
+    "content": "更新后的评论内容",
+    "author_info": {
       "id": 2,
       "nickname": "评论者",
       "avatar_url": "https://example.com/avatar2.jpg"
     },
-    "created_at": "2025-10-16T11:00:00Z"
+    "can_edit_current_user": true,
+    "time_ago": "刚刚",
+    "created_at": "2025-10-16T09:00:00Z",
+    "updated_at": "2025-10-16T11:00:00Z"
   }
-]
+}
 ```
+
+### 删除评论
+```http
+DELETE /api/comments/:id
+Authorization: Bearer <token>
+```
+
+**响应**: HTTP 204 No Content (成功删除)
+
+---
+
+## 💬 打卡评论接口 (v2.0 新增)
+
+### 获取打卡评论
+```http
+GET /api/check_ins/:id/comments
+Authorization: Bearer <token>
+```
+
+**响应** (v2.0 标准化格式):
+```json
+{
+  "success": true,
+  "message": "获取评论列表成功",
+  "data": [
+    {
+      "id": 1,
+      "content": "打卡评论文本内容",
+      "author_info": {
+        "id": 2,
+        "nickname": "评论者",
+        "avatar_url": "https://example.com/avatar2.jpg"
+      },
+      "can_edit_current_user": false,
+      "time_ago": "2小时前",
+      "created_at": "2025-10-16T09:00:00Z",
+      "updated_at": "2025-10-16T09:00:00Z"
+    }
+  ]
+}
+```
+
+### 添加打卡评论
+```http
+POST /api/check_ins/:id/comments
+Authorization: Bearer <token>
+```
+
+**请求体**:
+```json
+{
+  "comment": {
+    "content": "打卡评论文本内容"
+  }
+}
+```
+
+**字段说明**:
+- `content`: 评论内容 (必填，2-1000字符)
+
+**响应** (v2.0 标准化格式):
+```json
+{
+  "success": true,
+  "message": "评论发布成功",
+  "data": {
+    "id": 1,
+    "content": "打卡评论文本内容",
+    "author_info": {
+      "id": 1,
+      "nickname": "当前用户",
+      "avatar_url": "https://example.com/avatar.jpg"
+    },
+    "can_edit_current_user": true,
+    "time_ago": "刚刚",
+    "created_at": "2025-10-16T11:00:00Z",
+    "updated_at": "2025-10-16T11:00:00Z"
+  }
+}
+```
+
+### 更新打卡评论
+```http
+PUT /api/comments/:id
+Authorization: Bearer <token>
+```
+
+**权限**: 只有评论作者或管理员可以更新打卡评论
+
+### 删除打卡评论
+```http
+DELETE /api/comments/:id
+Authorization: Bearer <token>
+```
+
+**权限**: 只有评论作者或管理员可以删除打卡评论
 
 ---
 
@@ -1060,9 +1237,10 @@ Authorization: Bearer <leader_token>
 ## 🔄 API 版本
 
 ### 版本控制
-- 当前版本: v1.0.0
+- 当前版本: v2.0.0
 - 版本策略: 语义化版本控制
 - 向后兼容: 保证同一主版本内的向后兼容
+- v2.0 主要更新: API响应标准化、评论系统多态关联、GitHub同步优化
 
 ### 版本更新通知
 - 重大更新会提前30天通知

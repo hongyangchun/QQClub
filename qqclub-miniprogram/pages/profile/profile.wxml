@@ -302,4 +302,7 @@
       <text class="version-desc">让阅读成为习惯</text>
     </view>
   </view>
+
+  <!-- 自定义TabBar -->
+  <custom-tabbar current="{{3}}"></custom-tabbar>
 </view>

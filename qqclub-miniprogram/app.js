@@ -303,6 +303,6 @@ App({
     userInfo: null,
     token: null,
     code: null,
-    baseUrl: 'http://localhost:3000' // 开发环境API地址
+    baseUrl: 'http://localhost:3001' // 开发环境API地址
   }
 })

@@ -1,5 +1,8 @@
 {
-  "usingComponents": {},
+  "navigationBarTitleText": "交流",
+  "usingComponents": {
+    "custom-tabbar": "/components/custom-tabbar/custom-tabbar"
+  },
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

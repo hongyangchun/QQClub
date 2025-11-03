@@ -1,0 +1,250 @@
+<!--pages/event/statistics.wxml-->
+<view class="container page-container">
+  <!-- 活动头部 -->
+  <view class="stats-header" wx:if="{{eventInfo}}">
+    <view class="header-background"></view>
+    <view class="header-content">
+      <view class="event-title">{{eventInfo.title}}</view>
+      <view class="event-subtitle">{{eventInfo.book_name}} · 统计数据</view>
+      <view class="status-badge status-{{eventInfo.status}}">
+        <text class="status-icon">{{eventInfo.status_icon}}</text>
+        <text class="status-text">{{eventInfo.status_text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计概览 -->
+  <view class="stats-overview" wx:if="{{overviewStats}}">
+    <view class="overview-title">
+      <text class="title-icon">📊</text>
+      <text class="title-text">数据概览</text>
+    </view>
+    <view class="overview-grid">
+      <view class="stat-card primary">
+        <text class="stat-number">{{overviewStats.total_checkins}}</text>
+        <text class="stat-label">总打卡数</text>
+        <view class="stat-trend {{overviewStats.checkins_trend >= 0 ? 'up' : 'down'}}">
+          <text class="trend-icon">{{overviewStats.checkins_trend >= 0 ? '↑' : '↓'}}</text>
+          <text class="trend-value">{{overviewStats.checkins_trend_abs}}%</text>
+        </view>
+      </view>
+      <view class="stat-card success">
+        <text class="stat-number">{{overviewStats.active_participants}}</text>
+        <text class="stat-label">活跃参与</text>
+        <view class="stat-percentage">{{overviewStats.active_rate}}%</view>
+      </view>
+      <view class="stat-card warning">
+        <text class="stat-number">{{overviewStats.avg_completion}}</text>
+        <text class="stat-label">平均完成率</text>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{overviewStats.avg_completion}}%"></view>
+        </view>
+      </view>
+      <view class="stat-card info">
+        <text class="stat-number">{{overviewStats.total_flowers}}</text>
+        <text class="stat-label">小红花</text>
+        <view class="stat-desc">互动支持</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 个人进度 -->
+  <view class="personal-progress" wx:if="{{myProgress && userRole !== 'guest'}}">
+    <view class="section-title">
+      <text class="title-icon">🎯</text>
+      <text class="title-text">我的进度</text>
+    </view>
+    <view class="progress-card">
+      <view class="progress-header">
+        <view class="progress-info">
+          <text class="progress-label">打卡进度</text>
+          <text class="progress-value">{{myProgress.check_ins_count || 0}}/{{eventInfo.days_count}}天</text>
+        </view>
+        <text class="progress-percentage">{{myProgress.completion_rate || 0}}%</text>
+      </view>
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{myProgress.completion_rate || 0}}%"></view>
+      </view>
+      <view class="progress-stats">
+        <view class="progress-stat">
+          <text class="stat-icon">🌸</text>
+          <text class="stat-text">收到 {{myProgress.flowers_received_count || 0}} 朵</text>
+        </view>
+        <view class="progress-stat">
+          <text class="stat-icon">👑</text>
+          <text class="stat-text">领读 {{myProgress.leader_days_count || 0}} 次</text>
+        </view>
+        <view class="progress-stat">
+          <text class="stat-icon">🔥</text>
+          <text class="stat-text">连续 {{myProgress.streak_days || 0}} 天</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活跃度排行 -->
+  <view class="ranking-section" wx:if="{{rankings && rankings.length > 0}}">
+    <view class="section-title">
+      <text class="title-icon">🏆</text>
+      <text class="title-text">活跃度排行</text>
+      <text class="section-desc">根据打卡数量和活跃度计算</text>
+    </view>
+    <view class="ranking-list">
+      <view class="ranking-item top-three" wx:for="{{rankings}}" wx:key="id" wx:if="{{index < 3}}">
+        <view class="rank-medal {{index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze'}}">
+          <text class="medal-icon">{{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}}</text>
+        </view>
+        <image class="rank-avatar" src="{{item.avatar_url}}" mode="aspectFill"></image>
+        <view class="rank-info">
+          <text class="rank-name">{{item.nickname}}</text>
+          <text class="rank-stats">打卡{{item.checkins_count}}次 · 活跃度{{item.activity_score}}%</text>
+          <view class="rank-progress">
+            <view class="rank-progress-fill" style="width: {{item.activity_score}}%"></view>
+          </view>
+        </view>
+        <view class="rank-badge" wx:if="{{item.is_organizer}}">组织者</view>
+      </view>
+      <view class="ranking-item" wx:for="{{rankings}}" wx:key="id" wx:if="{{index >= 3 && index < 10}}">
+        <view class="rank-number">{{index + 1}}</view>
+        <image class="rank-avatar" src="{{item.avatar_url}}" mode="aspectFill"></image>
+        <view class="rank-info">
+          <text class="rank-name">{{item.nickname}}</text>
+          <text class="rank-stats">打卡{{item.checkins_count}}次 · 完成率{{item.completion_rate}}%</text>
+        </view>
+      </view>
+    </view>
+    <view class="view-more" wx:if="{{rankings.length > 10}}" bindtap="viewFullRanking">
+      <text>查看完整排行 →</text>
+    </view>
+  </view>
+
+  <!-- 打卡趋势 -->
+  <view class="trend-section" wx:if="{{checkinTrend}}">
+    <view class="section-title">
+      <text class="title-icon">📈</text>
+      <text class="title-text">打卡趋势</text>
+      <view class="trend-period">
+        <text class="period-item {{trendPeriod === '7' ? 'active' : ''}}" bindtap="changeTrendPeriod" data-period="7">7天</text>
+        <text class="period-item {{trendPeriod === '30' ? 'active' : ''}}" bindtap="changeTrendPeriod" data-period="30">30天</text>
+        <text class="period-item {{trendPeriod === 'all' ? 'active' : ''}}" bindtap="changeTrendPeriod" data-period="all">全部</text>
+      </view>
+    </view>
+    <view class="trend-chart">
+      <view class="chart-container">
+        <view class="chart-bars">
+          <view class="chart-bar" wx:for="{{checkinTrend}}" wx:key="date">
+            <view class="bar-fill" style="height: {{item.percentage}}%"></view>
+            <text class="bar-label">{{item.label}}</text>
+            <text class="bar-value">{{item.count}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 参与统计 -->
+  <view class="participation-stats" wx:if="{{participationStats}}">
+    <view class="section-title">
+      <text class="title-icon">👥</text>
+      <text class="title-text">参与统计</text>
+    </view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <view class="stat-header">
+          <text class="stat-icon">📊</text>
+          <text class="stat-title">参与分布</text>
+        </view>
+        <view class="stat-content">
+          <view class="participation-chart">
+            <view class="chart-segment participants" style="flex: {{participationStats.participants_ratio}}">
+              <text class="segment-label">参与者</text>
+              <text class="segment-value">{{participationStats.participants_count}}</text>
+            </view>
+            <view class="chart-segment observers" style="flex: {{participationStats.observers_ratio}}">
+              <text class="segment-label">围观者</text>
+              <text class="segment-value">{{participationStats.observers_count}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-header">
+          <text class="stat-icon">✅</text>
+          <text class="stat-title">完成状态</text>
+        </view>
+        <view class="stat-content">
+          <view class="completion-list">
+            <view class="completion-item">
+              <text class="completion-label">已完成</text>
+              <text class="completion-value">{{participationStats.completed_count}}人</text>
+            </view>
+            <view class="completion-item">
+              <text class="completion-label">进行中</text>
+              <text class="completion-value">{{participationStats.in_progress_count}}人</text>
+            </view>
+            <view class="completion-item">
+              <text class="completion-label">刚开始</text>
+              <text class="completion-value">{{participationStats.started_count}}人</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 互动统计 -->
+  <view class="interaction-stats" wx:if="{{interactionStats}}">
+    <view class="section-title">
+      <text class="title-icon">💝</text>
+      <text class="title-text">互动统计</text>
+    </view>
+    <view class="interaction-grid">
+      <view class="interaction-card">
+        <text class="interaction-number">{{interactionStats.total_flowers}}</text>
+        <text class="interaction-label">小红花总数</text>
+        <view class="interaction-desc">鼓励与支持</view>
+      </view>
+      <view class="interaction-card">
+        <text class="interaction-number">{{interactionStats.total_comments}}</text>
+        <text class="interaction-label">评论总数</text>
+        <view class="interaction-desc">交流与讨论</view>
+      </view>
+      <view class="interaction-card">
+        <text class="interaction-number">{{interactionStats.total_likes}}</text>
+        <text class="interaction-label">点赞总数</text>
+        <view class="interaction-desc">认可与鼓励</view>
+      </view>
+      <view class="interaction-card">
+        <text class="interaction-number">{{interactionStats.avg_interaction}}</text>
+        <text class="interaction-label">平均互动</text>
+        <view class="interaction-desc">每人互动次数</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="bottom-actions" wx:if="{{eventInfo}}">
+    <button class="action-btn outline" bindtap="exportData">
+      <text class="btn-icon">📊</text>
+      <text class="btn-text">导出数据</text>
+    </button>
+    <button class="action-btn primary" bindtap="goBack">
+      <text class="btn-icon">←</text>
+      <text class="btn-text">返回详情</text>
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">统计数据加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && !eventInfo}}">
+    <text class="empty-emoji">📊</text>
+    <text class="empty-text">统计数据不存在</text>
+    <text class="empty-desc">该活动可能已被删除或您没有访问权限</text>
+    <button class="btn btn-primary" bindtap="goBack">返回</button>
+  </view>
+</view>

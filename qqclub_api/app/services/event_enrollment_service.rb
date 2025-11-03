@@ -21,12 +21,12 @@ class EventEnrollmentService < ApplicationService
       end
 
       # 检查是否已报名
-      if user.enrollments.exists?(reading_event: event)
+      if user.event_enrollments.exists?(reading_event: event)
         return failure!("您已经报名该活动")
       end
 
       # 检查人数限制
-      if event.enrollments.count >= event.max_participants
+      if event.event_enrollments.count >= event.max_participants
         return failure!("活动已满员")
       end
 
@@ -38,6 +38,8 @@ class EventEnrollmentService < ApplicationService
       # 创建报名记录
       create_enrollment
     end
+
+    self
   end
 
   # 类方法：快速报名
@@ -49,13 +51,14 @@ class EventEnrollmentService < ApplicationService
 
   # 创建报名记录
   def create_enrollment
-    @enrollment = user.enrollments.create!(
+    @enrollment = user.event_enrollments.create!(
       reading_event: event,
-      paid_amount: event.enrollment_fee
+      fee_paid_amount: event.enrollment_fee,
+      enrollment_date: Time.current
     )
 
     # 如果是随机分配模式且有足够参与者，自动分配领读人
-    if event.leader_assignment_type == 'random' && event.enrollments.count >= 3
+    if event.leader_assignment_type == 'random' && event.event_enrollments.count >= 3
       event.assign_daily_leaders!
     end
 
@@ -65,9 +68,9 @@ class EventEnrollmentService < ApplicationService
         id: @enrollment.id,
         user_id: @enrollment.user_id,
         reading_event_id: @enrollment.reading_event_id,
-        payment_status: @enrollment.payment_status,
-        role: @enrollment.role,
-        paid_amount: @enrollment.paid_amount,
+        payment_status: @enrollment.refund_status,
+        role: @enrollment.enrollment_type,
+        paid_amount: @enrollment.fee_paid_amount,
         created_at: @enrollment.created_at
       }
     })

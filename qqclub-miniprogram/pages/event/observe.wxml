@@ -1,0 +1,188 @@
+<!--pages/event/observe.wxml-->
+<view class="container observe-container">
+  <!-- 简化的围观模式标识头部 -->
+  <view class="observe-header-simple">
+    <view class="header-content">
+      <view class="observe-badge">
+        <text class="observe-icon">👀</text>
+        <text class="observe-text">围观模式</text>
+      </view>
+      <view class="event-basic-info">
+        <text class="event-title-simple">{{eventInfo.book_name || '共读活动'}}</text>
+        <view class="event-meta-simple">
+          <text class="meta-text">{{todayCheckinsCount || 0}}人今日打卡</text>
+          <text class="meta-divider">·</text>
+          <text class="meta-text">第{{currentDay}}/{{eventInfo.days_count || 30}}天</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡作业列表 - 最显眼的位置 -->
+  <view class="checkins-main-card">
+    <view class="card-header">
+      <text class="card-title">✍️ 打卡作业</text>
+      <view class="filter-tabs">
+        <text class="filter-tab {{checkinFilter === 'all' ? 'active' : ''}}" bindtap="filterCheckins" data-filter="all">全部</text>
+        <text class="filter-tab {{checkinFilter === 'today' ? 'active' : ''}}" bindtap="filterCheckins" data-filter="today">今日</text>
+        <text class="filter-tab {{checkinFilter === 'featured' ? 'active' : ''}}" bindtap="filterCheckins" data-filter="featured">精选</text>
+      </view>
+    </view>
+
+    <view class="checkins-list" wx:if="{{checkins.length > 0}}">
+      <view class="checkin-item" wx:for="{{checkins}}" wx:key="id">
+        <!-- 用户信息 -->
+        <view class="checkin-header">
+          <image class="user-avatar" src="{{item.author.avatar_url}}" mode="aspectFill"></image>
+          <view class="user-info">
+            <view class="user-name-row">
+              <text class="user-name">{{item.author.nickname}}</text>
+              <view class="user-badge" wx:if="{{item.day_number}}">第{{item.day_number}}天</view>
+            </view>
+            <text class="checkin-time">{{item.created_at_relative}}</text>
+          </view>
+        </view>
+
+        <!-- 打卡内容 -->
+        <view class="checkin-content">
+          <text class="content-text">{{item.content}}</text>
+          <view class="content-images" wx:if="{{item.images && item.images.length > 0}}">
+            <image class="content-image" wx:for="{{item.images}}" wx:for-item="image" wx:key="index"
+                   src="{{image}}" mode="aspectFill" bindtap="previewImage" data-urls="{{item.images}}" data-current="{{image}}"></image>
+          </view>
+        </view>
+
+        <!-- 互动区域 -->
+        <view class="interaction-bar">
+          <view class="interaction-left">
+            <button class="interaction-btn {{item.is_liked ? 'liked' : ''}}" bindtap="likeCheckin" data-id="{{item.id}}">
+              <text class="interaction-icon">{{item.is_liked ? '❤️' : '🤍'}}</text>
+              <text class="interaction-count">{{item.likes_count}}</text>
+            </button>
+            <button class="interaction-btn" bindtap="commentCheckin" data-id="{{item.id}}">
+              <text class="interaction-icon">💬</text>
+              <text class="interaction-count">{{item.comments_count}}</text>
+            </button>
+            <button class="interaction-btn" bindtap="giveFlowerToCheckin" data-id="{{item.id}}" data-user-id="{{item.author.id}}">
+              <text class="interaction-icon">🌸</text>
+              <text class="interaction-count">送花</text>
+            </button>
+          </view>
+          <button class="interaction-btn share-btn" bindtap="shareCheckin" data-id="{{item.id}}">
+            <text class="interaction-icon">📤</text>
+          </button>
+        </view>
+
+        <!-- 评论区域 -->
+        <view class="comments-section" wx:if="{{item.comments && item.comments.length > 0}}">
+          <view class="comment-item" wx:for="{{item.comments}}" wx:for-item="comment" wx:key="comment.id" wx:for-index="commentIndex">
+            <image class="comment-avatar" src="{{comment.author.avatar_url}}" mode="aspectFill"></image>
+            <view class="comment-content">
+              <text class="comment-author">{{comment.author.nickname}}</text>
+              <text class="comment-text">{{comment.content}}</text>
+              <text class="comment-time">{{comment.created_at_relative}}</text>
+            </view>
+            <button class="comment-delete" wx:if="{{comment.author.id === userInfo.id}}" bindtap="deleteComment" data-checkin-id="{{item.id}}" data-comment-id="{{comment.id}}" data-comment-index="{{commentIndex}}">
+              <text class="delete-icon">🗑️</text>
+            </button>
+          </view>
+          <button class="add-comment-btn" bindtap="commentCheckin" data-id="{{item.id}}">
+            <text class="add-comment-text">添加评论...</text>
+          </button>
+        </view>
+
+        <!-- 评论输入框（隐藏状态下） -->
+        <view class="comment-input-modal" wx:if="{{showCommentModal && currentCheckinId === item.id}}">
+          <view class="comment-input-wrapper">
+            <textarea class="comment-textarea" placeholder="写下你的评论..." value="{{commentContent}}" bindinput="onCommentInput" maxlength="500"></textarea>
+            <view class="comment-actions">
+              <button class="cancel-btn" bindtap="hideCommentInput">取消</button>
+              <button class="submit-btn" bindtap="submitComment">发送</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-checkins" wx:else>
+      <text class="empty-emoji">📝</text>
+      <text class="empty-text">暂无打卡作业</text>
+      <text class="empty-desc">成为第一个打卡的人吧！</text>
+      <button class="upgrade-btn" bindtap="upgradeToParticipant" wx:if="{{eventInfo.can_enroll}}">
+        <text class="btn-text">升级为参与者</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 打卡统计 -->
+  <view class="stats-card">
+    <view class="card-header">
+      <text class="card-title">📊 打卡统计</text>
+    </view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-number">{{totalCheckinsCount || 0}}</text>
+        <text class="stat-label">总打卡</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{todayCheckinsCount || 0}}</text>
+        <text class="stat-label">今日打卡</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{totalFlowersCount || 0}}</text>
+        <text class="stat-label">小红花</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{eventInfo.participants_count || 0}}</text>
+        <text class="stat-label">参与人数</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 升级提示 -->
+  <view class="upgrade-prompt" wx:if="{{!myEnrollment && eventInfo.can_enroll}}">
+    <view class="upgrade-content">
+      <text class="upgrade-title">🎯 想要参与打卡吗？</text>
+      <text class="upgrade-desc">升级为参与者，记录你的阅读感悟</text>
+      <button class="upgrade-btn primary" bindtap="upgradeToParticipant">
+        <text class="btn-text">立即升级</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 活动信息（折叠状态） -->
+  <view class="event-info-collapsible">
+    <view class="collapsible-header" bindtap="toggleEventInfo">
+      <text class="collapsible-title">活动信息</text>
+      <text class="collapsible-icon">{{showEventInfo ? '▼' : '▶'}}</text>
+    </view>
+    <view class="collapsible-content" wx:if="{{showEventInfo}}">
+      <text class="event-title">{{eventInfo.title}}</text>
+      <text class="event-desc">{{eventInfo.description}}</text>
+      <view class="event-meta">
+        <text class="meta-item">📅 {{eventInfo.date_range}}</text>
+        <text class="meta-item">📖 {{eventInfo.book_name}}</text>
+        <text class="meta-item">👥 {{eventInfo.participants_count}}人参与</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部导航 -->
+  <view class="bottom-nav">
+    <button class="nav-btn" bindtap="goToParticipate">
+      <text class="nav-icon">🎯</text>
+      <text class="nav-text">共读</text>
+    </button>
+    <button class="nav-btn active" bindtap="goToObserve">
+      <text class="nav-icon">👀</text>
+      <text class="nav-text">围观</text>
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

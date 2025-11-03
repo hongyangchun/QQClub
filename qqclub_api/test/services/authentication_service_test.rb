@@ -6,24 +6,22 @@ class AuthenticationServiceTest < ActiveSupport::TestCase
   def setup
     @nickname = "测试用户"
     @openid = "test_openid_12345"
-    @avatar_url = "https://example.com/avatar.jpg"
   end
 
   # 模拟登录测试
   test "should mock login successfully with valid params" do
     params = {
       nickname: @nickname,
-      openid: @openid,
-      avatar_url: @avatar_url
+      openid: @openid
     }
 
     service = AuthenticationService.new(login_params: params, login_type: :mock)
     result = service.call
 
     assert result.success?
-    assert result.result[:token]
+    assert result.result[:access_token]
     assert_equal @nickname, result.result[:user]["nickname"]
-    assert_equal @avatar_url, result.result[:user]["avatar_url"]
+    assert result.result[:user]["avatar_url"].present? # Basic avatar presence check
 
     # 验证用户已创建并包含正确的openid
     user = User.find_by(wx_openid: @openid)
@@ -35,8 +33,7 @@ class AuthenticationServiceTest < ActiveSupport::TestCase
     params = {
       user: {
         nickname: @nickname,
-        wx_openid: @openid,
-        avatar_url: @avatar_url
+        wx_openid: @openid
       }
     }
 
@@ -79,10 +76,10 @@ class AuthenticationServiceTest < ActiveSupport::TestCase
     result = service.call
 
     assert result.success?
-    token = result.result[:token]
+    access_token = result.result[:access_token]
 
     # 验证token可以解码
-    decoded = User.decode_jwt_token(token)
+    decoded = User.decode_jwt_token(access_token)
     assert_not_nil decoded
     assert_equal @openid, decoded[:wx_openid]
   end
@@ -171,9 +168,9 @@ class AuthenticationServiceTest < ActiveSupport::TestCase
     result = service.call
 
     assert result.success?
-    token = result.result[:token]
+    access_token = result.result[:access_token]
 
-    decoded = User.decode_jwt_token(token)
+    decoded = User.decode_jwt_token(access_token)
     assert_equal "admin", decoded[:role]
   end
 

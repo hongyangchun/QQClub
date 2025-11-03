@@ -4,9 +4,14 @@
     "pages/auth/auth",
     "pages/profile/profile",
     "pages/event/list",
-    "pages/event/detail",
+    "pages/event/home",
+    "pages/event/checkin",
     "pages/event/create",
     "pages/event/stats",
+    "pages/event/participate",
+    "pages/event/observe",
+    "pages/event/activity-info",
+    "pages/event/statistics",
     "pages/forum/list",
     "pages/forum/detail",
     "pages/forum/create",
@@ -21,10 +26,10 @@
     "backgroundColor": "#f8f9ff"
   },
   "tabBar": {
-    "color": "#6B7280",
-    "selectedColor": "#4F46E5",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "custom": true,
+    "color": "#FFFFFF",
+    "selectedColor": "#FFFFFF",
+    "backgroundColor": "#FFFFFF",
     "list": [
       {
         "pagePath": "pages/index/index",
@@ -32,11 +37,11 @@
       },
       {
         "pagePath": "pages/event/list",
-        "text": "共读区"
+        "text": "共读"
       },
       {
         "pagePath": "pages/forum/list",
-        "text": "交流区"
+        "text": "交流"
       },
       {
         "pagePath": "pages/profile/profile",
@@ -44,7 +49,7 @@
       }
     ]
   },
-  "permission": {
+    "permission": {
     "scope.userLocation": {
       "desc": "您的位置信息将用于小程序位置接口的效果展示"
     }

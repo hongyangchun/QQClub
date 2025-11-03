@@ -39,6 +39,9 @@ require "rails/test_help"
 require "minitest/reporters"
 require "database_cleaner/active_record"
 
+# 加载测试支持文件
+Dir[Rails.root.join("test/support/**/*.rb")].each { |f| require f }
+
 # Load FactoryBot
 require "factory_bot_rails"
 
@@ -96,7 +99,7 @@ class ActiveSupport::TestCase
       start_date: Date.today,
       end_date: Date.today + 30.days,
       max_participants: 20,
-      enrollment_fee: 100.0,
+      fee_amount: 100.0,
       status: :draft,
       approval_status: :pending,
       leader: leader

@@ -1,2 +1,512 @@
 <!--pages/event/create.wxml-->
-<text>pages/event/create.wxml</text>
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-title">创建共读活动</view>
+    <view class="header-desc">设置活动详情，邀请小伙伴们一起读书吧</view>
+  </view>
+
+  <!-- 步骤指示器 -->
+  <view class="steps-indicator">
+    <view class="step {{currentStep >= 1 ? 'active' : ''}}">
+      <view class="step-number">1</view>
+      <view class="step-text">基本信息</view>
+    </view>
+    <view class="step-line {{currentStep >= 2 ? 'active' : ''}}"></view>
+    <view class="step {{currentStep >= 2 ? 'active' : ''}}">
+      <view class="step-number">2</view>
+      <view class="step-text">活动设置</view>
+    </view>
+    <view class="step-line {{currentStep >= 3 ? 'active' : ''}}"></view>
+    <view class="step {{currentStep >= 3 ? 'active' : ''}}">
+      <view class="step-number">3</view>
+      <view class="step-text">高级设置</view>
+    </view>
+    <view class="step-line {{currentStep >= 4 ? 'active' : ''}}"></view>
+    <view class="step {{currentStep >= 4 ? 'active' : ''}}">
+      <view class="step-number">4</view>
+      <view class="step-text">确认创建</view>
+    </view>
+  </view>
+
+  <!-- 表单内容 -->
+  <scroll-view class="form-container" scroll-y="true">
+
+    <!-- 步骤1：基本信息 -->
+    <view class="step-content" wx:if="{{currentStep === 1}}">
+      <view class="form-section">
+        <view class="section-title">基本信息</view>
+
+        <!-- 活动标题 -->
+        <view class="form-item">
+          <view class="item-label">活动标题 *</view>
+          <input
+            class="item-input"
+            placeholder="请输入活动标题（5-100字符）"
+            value="{{title}}"
+            bindinput="onTitleInput"
+            maxlength="100"
+          />
+        </view>
+
+        <!-- 书籍名称 -->
+        <view class="form-item">
+          <view class="item-label">书籍名称 *</view>
+          <input
+            class="item-input"
+            placeholder="请输入书籍名称"
+            value="{{bookName}}"
+            bindinput="onBookNameInput"
+            maxlength="100"
+          />
+        </view>
+
+        <!-- 书籍封面 -->
+        <view class="form-item">
+          <view class="item-label">书籍封面</view>
+
+          <!-- 封面预览 -->
+          <view class="book-cover-preview">
+            <image
+              wx:if="{{bookCoverUrl}}"
+              class="book-cover-image"
+              src="{{bookCoverUrl}}"
+              mode="aspectFill"
+            />
+            <view wx:else class="book-cover-placeholder">
+              <text class="placeholder-icon">📚</text>
+              <text class="placeholder-text">暂无封面</text>
+            </view>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view class="cover-actions">
+            <button
+              class="cover-btn search-btn"
+              bindtap="searchBookCover"
+              disabled="{{!bookName || bookName.length < 2}}"
+            >
+              🔍 智能搜索
+            </button>
+            <button class="cover-btn upload-btn" bindtap="chooseBookCover">
+              📷 手动上传
+            </button>
+          </view>
+        </view>
+
+        <!-- 活动描述 -->
+        <view class="form-item">
+          <view class="item-label">活动描述</view>
+          <textarea
+            class="item-textarea"
+            placeholder="请描述活动内容、阅读安排等..."
+            value="{{description}}"
+            bindinput="onDescriptionInput"
+            maxlength="500"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 步骤2：活动设置 -->
+    <view class="step-content" wx:if="{{currentStep === 2}}">
+      <view class="form-section">
+        <view class="section-title">时间设置</view>
+
+        <!-- 开始日期 -->
+        <view class="form-item">
+          <view class="item-label">开始日期 *</view>
+          <picker
+            mode="date"
+            value="{{startDate}}"
+            start="{{minStartDate}}"
+            bindchange="onStartDateChange"
+          >
+            <view class="picker-content">
+              <text class="picker-text">{{startDate || '请选择开始日期'}}</text>
+              <text class="picker-arrow">📅</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 结束日期 -->
+        <view class="form-item">
+          <view class="item-label">结束日期 *</view>
+          <picker
+            mode="date"
+            value="{{endDate}}"
+            start="{{startDate}}"
+            bindchange="onEndDateChange"
+          >
+            <view class="picker-content">
+              <text class="picker-text">{{endDate || '请选择结束日期'}}</text>
+              <text class="picker-arrow">📅</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 报名截止时间 -->
+        <view class="form-item">
+          <view class="item-label">报名截止时间</view>
+          <picker
+            mode="date"
+            value="{{enrollmentDeadline}}"
+            start="{{minStartDate}}"
+            bindchange="onEnrollmentDeadlineChange"
+          >
+            <view class="picker-content">
+              <text class="picker-text">{{enrollmentDeadline || '请选择报名截止时间'}}</text>
+              <text class="picker-arrow">⏰</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">人数设置</view>
+
+        <!-- 最小参与人数 -->
+        <view class="form-item">
+          <view class="item-label">最少参与人数</view>
+          <input
+            class="item-input"
+            type="number"
+            placeholder="最少参与人数"
+            value="{{minParticipants}}"
+            bindinput="onMinParticipantsInput"
+          />
+        </view>
+
+        <!-- 最大参与人数 -->
+        <view class="form-item">
+          <view class="item-label">最多参与人数</view>
+          <input
+            class="item-input"
+            type="number"
+            placeholder="最多参与人数"
+            value="{{maxParticipants}}"
+            bindinput="onMaxParticipantsInput"
+          />
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">活动模式</view>
+        <view class="form-item">
+          <view class="item-label">活动方式</view>
+          <view class="picker-content" bindtap="showActivityModePicker">
+            <text class="picker-text">{{activityModeLabel}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </view>
+        <view class="item-desc">{{activityModeDesc}}</view>
+      </view>
+    </view>
+
+    <!-- 步骤3：高级设置 -->
+    <view class="step-content" wx:if="{{currentStep === 3}}">
+      <view class="form-section">
+        <view class="section-title">费用设置</view>
+        <view class="form-item">
+          <view class="item-label">费用类型</view>
+          <view class="picker-content" bindtap="showFeeTypePicker">
+            <text class="picker-text">{{feeTypeLabel}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </view>
+        <view class="item-desc">{{feeTypeDesc}}</view>
+
+        <!-- 费用金额 -->
+        <view class="form-item" wx:if="{{feeType !== 'free'}}">
+          <view class="item-label">费用金额（元）</view>
+          <input
+            class="item-input"
+            type="digit"
+            placeholder="请输入费用金额"
+            value="{{feeAmount}}"
+            bindinput="onFeeAmountInput"
+          />
+        </view>
+
+        <!-- 组织者奖励比例（仅押金制） -->
+        <view class="form-item" wx:if="{{feeType === 'deposit'}}">
+          <view class="item-label">组织者奖励比例（%）</view>
+          <input
+            class="item-input"
+            type="digit"
+            placeholder="组织者奖励比例"
+            value="{{leaderRewardPercentage}}"
+            bindinput="onLeaderRewardInput"
+          />
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">活动规则</view>
+
+        <!-- 完成标准 -->
+        <view class="form-item">
+          <view class="item-label">完成标准（%）</view>
+          <input
+            class="item-input"
+            type="digit"
+            placeholder="完成标准"
+            value="{{completionStandard}}"
+            bindinput="onCompletionStandardInput"
+          />
+        </view>
+
+        <!-- 领读分配方式 -->
+        <view class="form-item">
+          <view class="item-label">领读分配方式</view>
+          <view class="picker-content" bindtap="showLeaderAssignmentPicker">
+            <text class="picker-text">{{leaderAssignmentLabel}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </view>
+        <view class="item-desc">{{leaderAssignmentDesc}}</view>
+
+        <!-- 周末休息 -->
+        <view class="form-item">
+          <view class="item-label">周末休息</view>
+          <switch
+            class="item-switch"
+            checked="{{weekendRest}}"
+            bindchange="onWeekendRestChange"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 步骤4：预览确认 -->
+    <view class="step-content" wx:if="{{currentStep === 4}}">
+      <view class="form-section">
+        <view class="section-title">活动预览</view>
+        <view class="preview-container">
+          <!-- 基本信息 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">📖</text>
+              <text class="section-text">基本信息</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">活动标题</text>
+              <text class="preview-value">{{title}}</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">书籍名称</text>
+              <text class="preview-value">{{bookName}}</text>
+            </view>
+            <view class="preview-item" wx:if="{{bookCoverUrl}}">
+              <text class="preview-label">书籍封面</text>
+              <image class="preview-cover" src="{{bookCoverUrl}}" mode="aspectFill" />
+            </view>
+            <view class="preview-item" wx:if="{{description}}">
+              <text class="preview-label">活动描述</text>
+              <text class="preview-value">{{description}}</text>
+            </view>
+          </view>
+
+          <!-- 时间设置 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">⏰</text>
+              <text class="section-text">时间设置</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">开始日期</text>
+              <text class="preview-value">{{startDate}}</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">结束日期</text>
+              <text class="preview-value">{{endDate}}</text>
+            </view>
+            <view class="preview-item" wx:if="{{enrollmentDeadline}}">
+              <text class="preview-label">报名截止</text>
+              <text class="preview-value">{{enrollmentDeadline}}</text>
+            </view>
+          </view>
+
+          <!-- 人数设置 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">👥</text>
+              <text class="section-text">人数设置</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">最少人数</text>
+              <text class="preview-value">{{minParticipants}}人</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">最多人数</text>
+              <text class="preview-value">{{maxParticipants}}人</text>
+            </view>
+          </view>
+
+          <!-- 活动模式 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">🎯</text>
+              <text class="section-text">活动模式</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">活动方式</text>
+              <text class="preview-value">{{activityModeLabel}}</text>
+            </view>
+          </view>
+
+          <!-- 费用设置 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">💰</text>
+              <text class="section-text">费用设置</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">费用类型</text>
+              <text class="preview-value">{{feeTypeLabel}}</text>
+            </view>
+            <view class="preview-item" wx:if="{{feeType !== 'free'}}">
+              <text class="preview-label">费用金额</text>
+              <text class="preview-value">{{feeAmount}}元</text>
+            </view>
+            <view class="preview-item" wx:if="{{feeType === 'deposit'}}">
+              <text class="preview-label">组织者奖励</text>
+              <text class="preview-value">{{leaderRewardPercentage}}%</text>
+            </view>
+          </view>
+
+          <!-- 活动规则 -->
+          <view class="preview-section">
+            <view class="preview-section-title">
+              <text class="section-icon">📋</text>
+              <text class="section-text">活动规则</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">完成标准</text>
+              <text class="preview-value">{{completionStandard}}%</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">领读分配</text>
+              <text class="preview-value">{{leaderAssignmentLabel}}</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-label">周末休息</text>
+              <text class="preview-value">{{weekendRest ? '是' : '否'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位 -->
+    <view class="bottom-placeholder"></view>
+  </scroll-view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-actions">
+    <view class="action-buttons">
+      <!-- 上一步按钮 -->
+      <button
+        wx:if="{{currentStep > 1}}"
+        class="prev-btn"
+        bindtap="prevStep"
+      >
+        {{currentStep === 4 ? '返回编辑' : '上一步'}}
+      </button>
+
+      <!-- 下一步按钮 -->
+      <button
+        wx:if="{{currentStep < 3}}"
+        class="next-btn"
+        bindtap="nextStep"
+      >
+        下一步
+      </button>
+
+      <!-- 预览按钮 -->
+      <button
+        wx:if="{{currentStep === 3}}"
+        class="next-btn"
+        bindtap="showPreview"
+      >
+        预览活动
+      </button>
+
+      <!-- 确认创建按钮 -->
+      <button
+        wx:if="{{currentStep === 4}}"
+        class="submit-btn {{submitting ? 'disabled' : ''}}"
+        bindtap="submitForm"
+        disabled="{{submitting}}"
+      >
+        {{submitting ? '创建中...' : '确认创建'}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 活动模式选择弹窗 -->
+  <view class="modal-mask" wx:if="{{showActivityModePicker}}" bindtap="hideActivityModePicker">
+    <view class="modal-content" catchtap="">
+      <view class="modal-header">
+        <view class="modal-title">选择活动模式</view>
+        <text class="modal-close" bindtap="hideActivityModePicker">×</text>
+      </view>
+      <view class="modal-body">
+        <view
+          wx:for="{{activityModes}}"
+          wx:key="value"
+          class="option-item {{activityMode === item.value ? 'active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onActivityModeSelect"
+        >
+          <view class="option-label">{{item.label}}</view>
+          <view class="option-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 费用类型选择弹窗 -->
+  <view class="modal-mask" wx:if="{{showFeeTypePicker}}" bindtap="hideFeeTypePicker">
+    <view class="modal-content" catchtap="">
+      <view class="modal-header">
+        <view class="modal-title">选择费用类型</view>
+        <text class="modal-close" bindtap="hideFeeTypePicker">×</text>
+      </view>
+      <view class="modal-body">
+        <view
+          wx:for="{{feeTypes}}"
+          wx:key="value"
+          class="option-item {{feeType === item.value ? 'active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onFeeTypeSelect"
+        >
+          <view class="option-label">{{item.label}}</view>
+          <view class="option-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 领读分配方式选择弹窗 -->
+  <view class="modal-mask" wx:if="{{showLeaderAssignmentPicker}}" bindtap="hideLeaderAssignmentPicker">
+    <view class="modal-content" catchtap="">
+      <view class="modal-header">
+        <view class="modal-title">选择领读分配方式</view>
+        <text class="modal-close" bindtap="hideLeaderAssignmentPicker">×</text>
+      </view>
+      <view class="modal-body">
+        <view
+          wx:for="{{leaderAssignmentTypes}}"
+          wx:key="value"
+          class="option-item {{leaderAssignmentType === item.value ? 'active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onLeaderAssignmentSelect"
+        >
+          <view class="option-label">{{item.label}}</view>
+          <view class="option-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -101,96 +101,25 @@
 
   <!-- 内容区域 -->
   <view class="content-section" wx:if="{{userInfo}}">
-    <!-- 最新活动 -->
-    <view class="content-block" wx:if="{{recentEvents.length > 0}}">
-      <view class="section-header">
-        <view class="section-title">
-          <text class="title-icon">📚</text>
-          <text>最新活动</text>
+    <!-- 欢迎引导 -->
+    <view class="welcome-guide">
+      <view class="guide-header">
+        <text class="guide-icon">📚</text>
+        <text class="guide-title">开启阅读之旅</text>
+      </view>
+      <view class="guide-content">
+        <text class="guide-desc">点击下方按钮开始探索精彩的阅读世界</text>
+      </view>
+      <view class="guide-actions">
+        <view class="guide-action" bindtap="goToEvents">
+          <text class="action-icon">🎯</text>
+          <text class="action-text">浏览活动</text>
         </view>
-        <view class="section-more" bindtap="goToEvents">
-          <text>查看全部</text>
-          <text class="more-arrow">›</text>
+        <view class="guide-action" bindtap="goToPosts">
+          <text class="action-icon">💬</text>
+          <text class="action-text">参与交流</text>
         </view>
       </view>
-      <view class="event-list">
-        <view class="event-card" wx:for="{{recentEvents}}" wx:key="id" bindtap="goToEventDetail" data-id="{{item.id}}">
-          <view class="event-header">
-            <view class="event-status">
-              <view class="status-dot {{item.approval_status === 'approved' ? 'approved' : item.approval_status === 'rejected' ? 'rejected' : 'pending'}}"></view>
-              <text class="status-text">{{item.approval_status_text}}</text>
-            </view>
-            <view class="event-badge">{{item.status_text}}</view>
-          </view>
-          <view class="event-body">
-            <view class="event-title">{{item.title}}</view>
-            <view class="event-book">📖 {{item.book_name}}</view>
-            <view class="event-meta">
-              <view class="meta-item">
-                <text class="meta-icon">👥</text>
-                <text class="meta-text">{{item.participants_count}}/{{item.max_participants}}</text>
-              </view>
-              <view class="meta-item">
-                <text class="meta-icon">📅</text>
-                <text class="meta-text">{{item.date_range}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 最新动态 -->
-    <view class="content-block" wx:if="{{recentPosts.length > 0}}">
-      <view class="section-header">
-        <view class="section-title">
-          <text class="title-icon">✍️</text>
-          <text>读书动态</text>
-        </view>
-        <view class="section-more" bindtap="goToPosts">
-          <text>查看全部</text>
-          <text class="more-arrow">›</text>
-        </view>
-      </view>
-      <view class="post-list">
-        <view class="post-card" wx:for="{{recentPosts}}" wx:key="id" bindtap="goToPostDetail" data-id="{{item.id}}">
-          <view class="post-header">
-            <view class="author-info">
-              <image class="avatar avatar-small" src="{{item.author_info.avatar_url}}" mode="aspectFill"></image>
-              <view class="author-details">
-                <view class="author-name">{{item.author_info.nickname}}</view>
-                <view class="post-time">{{item.created_at_relative}}</view>
-              </view>
-            </view>
-            <view class="post-menu">⋯</view>
-          </view>
-          <view class="post-body">
-            <view class="post-title">{{item.title}}</view>
-            <view class="post-content">{{item.content_preview}}</view>
-          </view>
-          <view class="post-footer">
-            <view class="post-stats">
-              <view class="stat-item">
-                <text class="stat-icon">❤️</text>
-                <text class="stat-text">{{item.likes_count}}</text>
-              </view>
-              <view class="stat-item">
-                <text class="stat-icon">💬</text>
-                <text class="stat-text">{{item.comments_count}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 空状态 -->
-    <view class="empty-state" wx:if="{{recentEvents.length === 0 && recentPosts.length === 0}}">
-      <view class="empty-illustration">
-        <text class="empty-emoji">🌱</text>
-      </view>
-      <view class="empty-title">开始你的阅读之旅</view>
-      <view class="empty-desc">加入活动或参与交流，开始精彩的阅读体验</view>
     </view>
   </view>
 
@@ -199,4 +128,7 @@
     <view class="loading-spinner"></view>
     <text class="loading-text">精彩内容加载中...</text>
   </view>
+
+  <!-- 自定义TabBar -->
+  <custom-tabbar current="{{0}}"></custom-tabbar>
 </view>

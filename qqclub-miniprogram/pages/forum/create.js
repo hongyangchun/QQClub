@@ -9,11 +9,6 @@ Page({
     title: '',
     content: '',
     images: [],
-    tags: [],
-    tagInput: '',
-    suggestedTags: ['小说', '散文', '诗歌', '历史', '哲学', '心理学', '科技', '艺术', '音乐', '电影'],
-    allowComment: true,
-    anonymous: false,
     showImagePreview: false,
     previewImageUrl: '',
     isEditing: false
@@ -81,10 +76,7 @@ Page({
           title: response.title || '',
           content: response.content || '',
           selectedCategory: response.category || '',
-          images: response.images || [],
-          tags: response.tags || [],
-          allowComment: response.allow_comment !== false, // 默认为true
-          anonymous: response.anonymous || false
+          images: response.images || []
         });
       } else {
         throw new Error('帖子不存在');
@@ -136,7 +128,7 @@ Page({
 
   // 检查是否有未保存的更改
   hasUnsavedChanges() {
-    return this.data.title || this.data.content || this.data.images.length > 0 || this.data.tags.length > 0;
+    return this.data.title || this.data.content || this.data.images.length > 0;
   },
 
   // 选择板块
@@ -250,59 +242,8 @@ Page({
     });
   },
 
-  // 标签输入
-  onTagInput(e) {
-    this.setData({
-      tagInput: e.detail.value
-    });
-  },
-
-  // 添加标签
-  addTag() {
-    const tag = this.data.tagInput.trim();
-    if (tag && !this.data.tags.includes(tag)) {
-      const newTags = [...this.data.tags, tag];
-      this.setData({
-        tags: newTags,
-        tagInput: ''
-      });
-    }
-  },
-
-  // 添加推荐标签
-  addSuggestedTag(e) {
-    const tag = e.currentTarget.dataset.tag;
-    if (!this.data.tags.includes(tag)) {
-      const newTags = [...this.data.tags, tag];
-      this.setData({
-        tags: newTags
-      });
-    }
-  },
-
-  // 删除标签
-  deleteTag(e) {
-    const index = e.currentTarget.dataset.index;
-    const newTags = this.data.tags.filter((_, i) => i !== index);
-    this.setData({
-      tags: newTags
-    });
-  },
-
-  // 允许评论开关
-  onAllowCommentChange(e) {
-    this.setData({
-      allowComment: e.detail.value
-    });
-  },
-
-  // 匿名开关
-  onAnonymousChange(e) {
-    this.setData({
-      anonymous: e.detail.value
-    });
-  },
-
+  
+  
   // 验证表单
   validateForm() {
     if (!this.data.selectedCategory) {
@@ -408,9 +349,7 @@ Page({
         this.setData({
           title: '',
           content: '',
-          images: [],
-          tags: [],
-          tagInput: ''
+          images: []
         });
       }
 

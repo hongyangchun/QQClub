@@ -10,7 +10,7 @@
       <view class="header-actions">
         <button class="create-btn" bindtap="goToCreateEvent">
           <text class="btn-icon">✏️</text>
-          <text class="btn-text">创建共读</text>
+          <text class="btn-text">创建活动</text>
         </button>
       </view>
     </view>
@@ -54,8 +54,6 @@
         class="event-card"
         wx:for="{{events}}"
         wx:key="id"
-        bindtap="goToEventDetail"
-        data-id="{{item.id}}"
       >
         <!-- 活动头部 -->
         <view class="event-header">
@@ -89,36 +87,13 @@
         <!-- 活动操作 -->
         <view class="event-actions">
           <button
-            class="action-btn join-btn"
-            bindtap="joinEvent"
+            class="action-btn detail-btn"
+            bindtap="goToEventDetail"
             data-id="{{item.id}}"
-            catch:tap="true"
-            wx:if="{{item.can_join}}"
           >
-            <text class="btn-icon">🟢</text>
-            <text class="btn-text">加入共读</text>
+            <text class="btn-icon">📖</text>
+            <text class="btn-text">查看详情</text>
           </button>
-
-          <button
-            class="action-btn observe-btn"
-            bindtap="observeEvent"
-            data-id="{{item.id}}"
-            catch:tap="true"
-            wx:if="{{item.can_observe}}"
-          >
-            <text class="btn-icon">👁️</text>
-            <text class="btn-text">围观共读</text>
-          </button>
-
-          <view class="action-btn joined-btn" wx:if="{{item.is_participant}}">
-            <text class="btn-icon">✅</text>
-            <text class="btn-text">已加入</text>
-          </view>
-
-          <view class="action-btn observing-btn" wx:if="{{item.is_observer}}">
-            <text class="btn-icon">👁️</text>
-            <text class="btn-text">围观中</text>
-          </view>
         </view>
       </view>
     </view>
@@ -132,7 +107,7 @@
     <view class="empty-title">暂无共读活动</view>
     <view class="empty-desc">快来创建第一个共读活动吧！</view>
     <button class="btn btn-primary" bindtap="goToCreateEvent">
-      <text>创建共读活动</text>
+      <text>创建活动</text>
       <text class="btn-arrow">→</text>
     </button>
   </view>
@@ -156,4 +131,7 @@
     <view class="end-line"></view>
     <text class="end-text">已经到底了</text>
   </view>
+
+  <!-- 自定义TabBar -->
+  <custom-tabbar current="{{1}}"></custom-tabbar>
 </view>

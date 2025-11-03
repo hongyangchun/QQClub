@@ -39,7 +39,44 @@ class Comment < ApplicationRecord
     end
   end
 
-  # JSON 序列化方法
+  # API序列化方法 - 标准化API响应格式
+  def as_json_for_api(options = {})
+    current_user = options[:current_user]
+
+    result = {
+      id: id,
+      content: content,
+      created_at: created_at,
+      updated_at: updated_at,
+      time_ago: time_ago,
+      author: user.as_json_for_api
+    }
+
+    # 添加评论对象信息
+    if commentable
+      result[:commentable] = {
+        type: commentable_type,
+        id: commentable_id,
+        title: commentable_title
+      }
+    end
+
+    # 添加当前用户的权限信息
+    if current_user
+      result[:interactions] = {
+        can_edit: can_edit?(current_user)
+      }
+    end
+
+    # 包含回复评论
+    if options[:include_replies]
+      result[:replies] = replies.limit(5).map { |reply| reply.as_json_for_api(options) }
+    end
+
+    result
+  end
+
+  # JSON 序列化方法 - 保持向后兼容
   def as_json(options = {})
     json_hash = {
       id: id,
@@ -74,6 +111,29 @@ class Comment < ApplicationRecord
     loaded_associations
   rescue
     false
+  end
+
+  # 获取评论对象的标题
+  def commentable_title
+    return unless commentable
+
+    case commentable_type
+    when 'Post'
+      commentable.title
+    when 'CheckIn'
+      "第#{commentable.day_number}天打卡"
+    when 'ReadingEvent'
+      commentable.title
+    when 'Flower'
+      "小红花 #{commentable.id}"
+    else
+      commentable_type
+    end
+  end
+
+  # 获取回复评论
+  def replies
+    Comment.where(commentable_type: 'Comment', commentable_id: id)
   end
 
   private

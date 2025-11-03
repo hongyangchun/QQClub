@@ -1,0 +1,141 @@
+<!--pages/event/checkin.wxml-->
+<view class="container checkin-page">
+  <!-- 头部导航 -->
+  <view class="header-nav">
+    <view class="nav-left" bindtap="goBack">
+      <text class="nav-icon">‹</text>
+    </view>
+    <view class="nav-center">
+      <text class="nav-title">{{mode === 'edit' ? '编辑打卡' : '今日打卡'}}</text>
+    </view>
+    <view class="nav-right">
+      <text class="nav-action" bindtap="saveDraft">存草稿</text>
+    </view>
+  </view>
+
+  <!-- 活动信息卡片 -->
+  <view class="event-info-card" wx:if="{{eventInfo}}">
+    <view class="event-info-content">
+      <view class="event-basic">
+        <image class="event-book-cover" src="{{eventInfo.book_cover_image || 'https://picsum.photos/60/80?random=book'}}" mode="aspectFill"></image>
+        <view class="event-details">
+          <text class="event-title">{{eventInfo.book_name || '读书活动'}}</text>
+          <text class="event-subtitle">第{{currentDay}}天 · {{getReadingContent() ? '有任务' : '暂无任务'}}</text>
+        </view>
+      </view>
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{myEnrollment.completion_rate || 0}}%"></view>
+      </view>
+      <view class="progress-text">完成进度: {{myEnrollment.completion_rate || 0}}%</view>
+    </view>
+  </view>
+
+  <!-- 今日任务区域 -->
+  <view class="today-task-section" wx:if="{{loading}}">
+    <view class="loading-skeleton">
+      <view class="skeleton-line long"></view>
+      <view class="skeleton-line medium"></view>
+      <view class="skeleton-line short"></view>
+    </view>
+  </view>
+
+  <view class="today-task-section" wx:else>
+    <view class="section-header">
+      <text class="section-title">今日任务</text>
+      <view class="task-actions">
+        <text class="task-action-btn" bindtap="viewTaskDetail">详情</text>
+        <text class="task-action-btn" bindtap="viewThinkingQuestions" wx:if="{{getThinkingQuestions().length > 0}}">思考题</text>
+      </view>
+    </view>
+
+    <view class="task-content">
+      <view class="task-text" wx:if="{{getReadingContent()}}">
+        <text class="task-label">📖 今日阅读内容:</text>
+        <text class="task-content-text">{{getReadingContent()}}</text>
+      </view>
+
+      <view class="thinking-questions" wx:if="{{getThinkingQuestions().length > 0}}">
+        <text class="task-label">💭 思考问题:</text>
+        <view class="question-list">
+          <text class="question-item" wx:for="{{getThinkingQuestions()}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="no-task" wx:if="{{!getReadingContent() && getThinkingQuestions().length === 0}}">
+        <text class="no-task-icon">📝</text>
+        <text class="no-task-text">领读人今日尚未发布学习任务</text>
+        <text class="no-task-desc">可以先自由分享阅读感受</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡编辑区域 -->
+  <view class="checkin-edit-section">
+    <view class="section-header">
+      <text class="section-title">打卡内容</text>
+      <text class="word-count {{wordCount > maxWords * 0.9 ? 'warning' : ''}}">{{wordCount}}/{{maxWords}}</text>
+    </view>
+
+    <!-- 文本编辑区 -->
+    <view class="content-editor">
+      <textarea
+        class="checkin-textarea"
+        placeholder="分享今天的阅读感受、学习心得或思考..."
+        value="{{checkinContent}}"
+        bindinput="onCheckinContentInput"
+        maxlength="{{maxWords}}"
+        auto-height
+        adjust-position="{{true}}"
+        cursor-spacing="10"
+      ></textarea>
+    </view>
+
+    <!-- 图片上传区 -->
+    <view class="image-upload-section">
+      <view class="section-header">
+        <text class="section-title">添加图片</text>
+        <text class="image-count">{{selectedImages.length}}/{{maxImages}}</text>
+      </view>
+
+      <view class="image-grid">
+        <!-- 已选择的图片 -->
+        <view class="image-item" wx:for="{{selectedImages}}" wx:key="*this">
+          <image class="image-preview" src="{{item}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}"></image>
+          <view class="image-delete" bindtap="removeImage" data-index="{{index}}">
+            <text class="delete-icon">×</text>
+          </view>
+        </view>
+
+        <!-- 添加图片按钮 -->
+        <view class="image-add" wx:if="{{selectedImages.length < maxImages}}" bindtap="chooseImage">
+          <text class="add-icon">+</text>
+          <text class="add-text">添加图片</text>
+        </view>
+
+        <!-- 占位项保持网格对齐 -->
+        <view class="image-placeholder" wx:for="{{maxImages - selectedImages.length - (selectedImages.length < maxImages ? 1 : 0)}}" wx:key="*this"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="bottom-actions">
+    <button class="action-btn secondary" bindtap="goBack">返回</button>
+    <button class="action-btn primary {{submitting ? 'loading' : ''}}" bindtap="submitCheckIn" disabled="{{submitting}}">
+      <text wx:if="{{!submitting}}">{{mode === 'edit' ? '修改完成' : '提交打卡'}}</text>
+      <text wx:else>提交中...</text>
+    </button>
+  </view>
+
+  <!-- 加载遮罩 -->
+  <view class="loading-overlay" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 提交遮罩 -->
+  <view class="loading-overlay" wx:if="{{submitting}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">{{mode === 'edit' ? '修改中...' : '提交中...'}}</text>
+  </view>
+</view>

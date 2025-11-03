@@ -7,9 +7,7 @@
         <text class="nav-icon">←</text>
       </view>
       <view class="nav-title">发帖</view>
-      <view class="nav-btn" bindtap="publishPost">
-        <text class="publish-btn">发布</text>
-      </view>
+      <view class="nav-placeholder"></view>
     </view>
   </view>
 
@@ -100,55 +98,12 @@
       </view>
     </view>
 
-    <!-- 标签设置 -->
-    <view class="form-section">
-      <view class="section-title">
-        <text class="title-text">添加标签</text>
-        <text class="title-desc">（可选）</text>
-      </view>
-      <view class="tag-input-area">
-        <view class="tag-input-wrapper">
-          <input class="tag-input" placeholder="输入标签后按回车添加" bindinput="onTagInput" bindconfirm="addTag" value="{{tagInput}}" />
-          <button class="add-tag-btn" bindtap="addTag">添加</button>
-        </view>
-        <view class="selected-tags" wx:if="{{tags.length > 0}}">
-          <view class="tag-item" wx:for="{{tags}}" wx:key="index">
-            <text class="tag-text">#{{item}}</text>
-            <view class="tag-delete" bindtap="deleteTag" data-index="{{index}}">
-              <text class="delete-icon">×</text>
-            </view>
-          </view>
-        </view>
-        <view class="suggested-tags">
-          <text class="suggested-title">热门标签：</text>
-          <view class="suggested-list">
-            <text class="suggested-tag" wx:for="{{suggestedTags}}" wx:key="index" bindtap="addSuggestedTag" data-tag="{{item}}">{{item}}</text>
-          </view>
-        </view>
-      </view>
-    </view>
+  </view>
 
-    <!-- 发布选项 -->
-    <view class="form-section">
-      <view class="section-title">
-        <text class="title-text">发布选项</text>
-      </view>
-      <view class="publish-options">
-        <view class="option-item">
-          <view class="option-info">
-            <view class="option-name">允许评论</view>
-            <view class="option-desc">其他用户可以评论你的帖子</view>
-          </view>
-          <switch class="option-switch" checked="{{allowComment}}" bindchange="onAllowCommentChange" />
-        </view>
-        <view class="option-item">
-          <view class="option-info">
-            <view class="option-name">匿名发布</view>
-            <view class="option-desc">隐藏你的身份信息</view>
-          </view>
-          <switch class="option-switch" checked="{{anonymous}}" bindchange="onAnonymousChange" />
-        </view>
-      </view>
+  <!-- 底部发布按钮 -->
+  <view class="bottom-publish-bar">
+    <view class="publish-button" bindtap="publishPost">
+      <text class="publish-text">发布帖子</text>
     </view>
   </view>
 
