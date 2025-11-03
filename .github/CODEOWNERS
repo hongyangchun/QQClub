@@ -1,0 +1,54 @@
+# CODEOWNERS file for QQClub
+#
+# This file defines code ownership for automatic review requests.
+# When a pull request is opened, GitHub will automatically request
+# reviews from the designated owners of the modified files.
+#
+# Syntax: path/to/file @username
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owner - gets assigned to all PRs by default
+* @hongyangchun
+
+# API Backend - Rails application
+/qqclub_api/ @hongyangchun
+/qqclub_api/app/controllers/ @hongyangchun
+/qqclub_api/app/models/ @hongyangchun
+/qqclub_api/app/services/ @hongyangchun
+/qqclub_api/config/ @hongyangchun
+/qqclub_api/db/ @hongyangchun
+
+# WeChat Mini Program - Frontend
+/qqclub-miniprogram/ @hongyangchun
+/qqclub-miniprogram/pages/ @hongyangchun
+/qqclub-miniprogram/components/ @hongyangchun
+/qqclub-miniprogram/utils/ @hongyangchun
+
+# Tests - Ensure quality standards
+/qqclub_api/test/ @hongyangchun
+/qqclub-miniprogram/test/ @hongyangchun
+
+# Documentation - Keep docs updated
+/docs/ @hongyangchun
+*.md @hongyangchun
+/README.md @hongyangchun
+/DEVELOPMENT_WORKFLOW.md @hongyangchun
+
+# Configuration and Infrastructure
+/.github/ @hongyangchun
+/scripts/ @hongyangchun
+/config/ @hongyangchun
+/.claude/ @hongyangchun
+
+# Database migrations - Critical changes
+/qqclub_api/db/migrate/ @hongyangchun
+
+# Security-sensitive files
+/qqclub_api/config/credentials.yml.enc @hongyangchun
+/qqclub_api/config/master.key @hongyangchun
+/qqclub_api/Gemfile @hongyangchun
+/qqclub_api/Gemfile.lock @hongyangchun
+
+# Deployment scripts
+/scripts/qq-deploy.sh @hongyangchun
+/scripts/qq-test.sh @hongyangchun
